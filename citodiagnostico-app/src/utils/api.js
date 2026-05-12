@@ -4,7 +4,7 @@
 // GAS requiere no-cors para POST y seguir redirects en GET
 // ─────────────────────────────────────────────────────────────
 
-const BASE_URL = process.env.REACT_APP_GAS_URL;
+const BASE_URL = '/api';
 
 // Helper GET — GAS responde JSON directo en GET
 export async function apiGet(action, params = {}) {
