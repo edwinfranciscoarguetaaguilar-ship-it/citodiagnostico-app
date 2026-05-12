@@ -1,28 +1,45 @@
 // ─────────────────────────────────────────────────────────────
 // API Client — Centro Citodiagnóstico
 // Conecta el React con el Google Apps Script desplegado
+// GAS requiere no-cors para POST y seguir redirects en GET
 // ─────────────────────────────────────────────────────────────
 
 const BASE_URL = process.env.REACT_APP_GAS_URL;
 
-// Helper GET
+// Helper GET — GAS responde JSON directo en GET
 export async function apiGet(action, params = {}) {
   const query = new URLSearchParams({ action, ...params }).toString();
-  const res = await fetch(`${BASE_URL}?${query}`);
-  const json = await res.json();
+  const res = await fetch(`${BASE_URL}?${query}`, {
+    redirect: 'follow',
+    method: 'GET',
+  });
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error('Respuesta inválida del servidor. Verificá que el GAS esté desplegado correctamente.');
+  }
   if (!json.ok) throw new Error(json.error || 'Error en la API');
   return json.data;
 }
 
-// Helper POST
+// Helper POST — GAS requiere content-type text/plain para evitar preflight CORS
 export async function apiPost(action, data = {}) {
   const token = localStorage.getItem('cito_token') || '';
   const res = await fetch(BASE_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action, data, token }),
   });
-  const json = await res.json();
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error('Respuesta inválida del servidor. Verificá que el GAS esté desplegado correctamente.');
+  }
   if (!json.ok) throw new Error(json.error || 'Error en la API');
   return json.data;
 }
@@ -42,7 +59,7 @@ export const api = {
   getSiguienteId:    () => apiGet('getSiguienteId'),
 
   // Dashboard
-  getDashboard:      () => apiGet('getDashboard'),
+  getDashboard: () => apiGet('getDashboard'),
 
   // Citologías
   getCitologiasHoy:        () => apiGet('getCitologiasHoy'),
@@ -63,8 +80,8 @@ export const api = {
   actualizarMedico: (data) => apiPost('actualizarMedico', data),
 
   // Finanzas
-  getResumenMes: (mes, anio) => apiGet('getResumenMes', { mes, anio }),
-  getEgresos:    (mes, anio) => apiGet('getEgresos', { mes, anio }),
+  getResumenMes:   (mes, anio) => apiGet('getResumenMes', { mes, anio }),
+  getEgresos:      (mes, anio) => apiGet('getEgresos', { mes, anio }),
   registrarEgreso: (data) => apiPost('registrarEgreso', data),
 
   // Config
