@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Clock, ChartBar, ClipboardPlus, Microscope, TrendingUp, TrendingDown } from 'lucide-react';
+import { LayoutDashboard, Clock, BarChart2, ClipboardPlus, Microscope, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, EstatusPill, PagoPill, Spinner, EmptyState, Btn } from '../components/UI';
 import { api } from '../utils/api';
 import { useApp } from '../context/AppContext';
@@ -60,7 +60,7 @@ export default function Dashboard({ setPage }) {
       </div>
 
       {/* ── FILTROS ── */}
-      <Card title="Filtros de período" icon={ChartBar}
+      <Card title="Filtros de período" icon={BarChart2}
         action={<Btn size="sm" onClick={cargar}>Actualizar</Btn>}
       >
         <div style={{ padding:'14px 20px', display:'flex', gap:14, flexWrap:'wrap', alignItems:'flex-end' }}>
@@ -129,7 +129,7 @@ export default function Dashboard({ setPage }) {
       </div>
 
       {/* ── TOP MÉDICOS ── */}
-      <Card title="Top médicos del mes" icon={ChartBar}>
+      <Card title="Top médicos del mes" icon={BarChart2}>
         <div className="table-wrap">
           <table>
             <thead><tr><th>Médico</th><th>Citos</th><th>Total</th><th>Pendiente</th></tr></thead>
