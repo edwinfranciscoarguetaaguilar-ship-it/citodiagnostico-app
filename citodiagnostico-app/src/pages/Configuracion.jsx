@@ -15,6 +15,14 @@ export default function Configuracion() {
     <input className="form-input" value={c(key)} onChange={e => set(key, e.target.value)} {...props}/>
   );
 
+  // Convierte cualquier URL de Drive a URL directa de imagen
+  const driveImg = (url) => {
+    if (!url) return '';
+    if (url.includes('uc?')) return url;
+    const match = url.match(/[-\w]{25,}/);
+    return match ? `https://drive.google.com/uc?export=view&id=${match[0]}` : url;
+  };
+
   const guardar = async (seccion) => {
     setGuardando(true);
     try {
@@ -58,7 +66,7 @@ export default function Configuracion() {
               <label className="form-label">URL del logo (Google Drive — imagen pública horizontal)</label>
               {inp('LAB_LOGO_URL', { placeholder:'https://drive.google.com/uc?id=...' })}
               {c('LAB_LOGO_URL') && (
-                <img src={c('LAB_LOGO_URL')} alt="Logo preview" style={{ marginTop:8, maxHeight:60, objectFit:'contain' }} onError={e=>e.target.style.display='none'}/>
+                <img src={driveImg(c('LAB_LOGO_URL'))} alt="Logo preview" style={{ marginTop:8, maxHeight:60, objectFit:'contain' }} onError={e=>e.target.style.display='none'}/>
               )}
             </div>
           </div>
@@ -95,7 +103,7 @@ export default function Configuracion() {
                 Subí la imagen del sello y firma a Google Drive, hacela pública y pegá el link directo aquí.
               </div>
               {c('CITO_FIRMA_URL') && (
-                <img src={c('CITO_FIRMA_URL')} alt="Firma preview" style={{ marginTop:8, maxHeight:80, objectFit:'contain' }} onError={e=>e.target.style.display='none'}/>
+                <img src={driveImg(c('CITO_FIRMA_URL'))} alt="Firma preview" style={{ marginTop:8, maxHeight:80, objectFit:'contain' }} onError={e=>e.target.style.display='none'}/>
               )}
             </div>
             <div className="form-group span2">
