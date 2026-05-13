@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Stethoscope, Plus, Edit, Search } from 'lucide-react';
+import { Activity, Plus, Edit, Search } from 'lucide-react';
 import { Card, Btn, Modal, Spinner } from '../components/UI';
 import { api } from '../utils/api';
 import { useApp } from '../context/AppContext';
@@ -78,7 +78,7 @@ export default function Medicos() {
   return (
     <div className="fade-in">
       <Card
-        title="Médicos y laboratorios referidores" icon={Stethoscope}
+        title="Médicos y laboratorios referidores" icon={Activity}
         action={
           <div className="btn-group">
             <div className="search-wrap" style={{ width:240 }}>
@@ -128,13 +128,23 @@ export default function Medicos() {
                   <td>{precioDisplay(m.precioLiquida)}</td>
                   <td>{precioDisplay(m.precioBiopsia)}</td>
                   <td>{precioDisplay(m.precioCupula)}</td>
-                  <td style={{ fontSize:11 }}>{m.whatsapp || '—'}</td>
+                  <td style={{ fontSize:11 }}>
+                    {m.whatsapp
+                      ? <a href={`https://wa.me/${m.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
+                          style={{ color:'#25d366', fontWeight:600, textDecoration:'none' }}>
+                          📱 {m.whatsapp}
+                        </a>
+                      : <span style={{ color:'var(--text-3)' }}>—</span>
+                    }
+                  </td>
                   <td>
                     <span style={{
                       fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:12,
-                      background: m.preferenciaEntrega==='WHATSAPP'?'#dbeafe':m.preferenciaEntrega==='AMBOS'?'#f0fdf4':'var(--bg2)',
-                      color: m.preferenciaEntrega==='WHATSAPP'?'#1e40af':m.preferenciaEntrega==='AMBOS'?'#065f46':'var(--text-3)'
-                    }}>{m.preferenciaEntrega}</span>
+                      background: m.preferenciaEntrega==='WHATSAPP'?'#dcfce7':m.preferenciaEntrega==='AMBOS'?'#dbeafe':'var(--bg2)',
+                      color: m.preferenciaEntrega==='WHATSAPP'?'#065f46':m.preferenciaEntrega==='AMBOS'?'#1e40af':'var(--text-3)'
+                    }}>
+                      {m.preferenciaEntrega==='WHATSAPP'?'📱 WhatsApp':m.preferenciaEntrega==='AMBOS'?'📱🖨️ Ambos':'🖨️ Impreso'}
+                    </span>
                   </td>
                   <td>
                     <span style={{ fontSize:10, fontWeight:600, color: m.activo==='SI'?'#0a6640':'#991b1b' }}>
