@@ -436,35 +436,29 @@ tr:hover td { background: #fdf6f9; }
 
 /* ── Print styles ──────────────────────────────────────────── */
 @media print {
-  /* Ocultar TODO excepto el reporte */
-  .sidebar, .topbar, .no-print,
-  .card-header, .tabs, .form-actions,
-  .btn, .btn-group, .modal-overlay,
-  .patient-bar, .search-wrap,
-  .metrics-grid, .fin-total-bar,
-  nav, header, aside { display: none !important; }
+  /* Ocultar absolutamente todo */
+  body > * { display: none !important; }
 
-  /* Reset del layout */
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
-  .app-shell  { display: block !important; height: auto !important; }
-  .app-main   { display: block !important; height: auto !important; overflow: visible !important; }
-  .page-body  { padding: 0 !important; overflow: visible !important; margin: 0 !important; }
-  .card       { border: none !important; box-shadow: none !important; margin: 0 !important; }
-  .fade-in    { animation: none !important; }
+  /* Mostrar solo el reporte dentro del app */
+  #reporte-imprimible,
+  #reporte-imprimible * { display: revert !important; }
 
   /* El reporte ocupa toda la página */
   #reporte-imprimible {
+    position: fixed !important;
+    top: 0 !important; left: 0 !important;
+    width: 100% !important;
     max-width: 100% !important;
     border: none !important;
     box-shadow: none !important;
     margin: 0 !important;
-    page-break-inside: avoid;
+    padding: 0 !important;
+    background: #fff !important;
+    z-index: 99999 !important;
   }
 
-  /* Forzar colores de fondo en bandas del reporte */
-  #reporte-imprimible [style*="background:#802f58"],
-  #reporte-imprimible [style*="background: #802f58"] {
+  /* Forzar colores de fondo */
+  * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
