@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ClipboardPlus, Plus, Save, Trash2, Edit, X } from 'lucide-react';
+import { ClipboardList, Plus, Save, Trash2, Edit, X } from 'lucide-react';
 import { Card, Btn, PagoPill, Spinner } from '../components/UI';
 import { api } from '../utils/api';
 import { useApp } from '../context/AppContext';
@@ -41,17 +41,18 @@ export default function Recepcion() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Precio automático al seleccionar médico + muestra
+  // Precio automático al seleccionar médico + muestra (siempre actualiza pero deja editar)
+  const [precioManual, setPrecioManual] = useState(false);
   useEffect(() => {
-    if (!form.medico || !form.muestra) return;
+    if (!form.medico || !form.muestra || precioManual) return;
     const med = medicos.find(m => m.nombre === form.medico);
     if (!med) return;
     let precio = '';
-    if (form.muestra === 'CERVICO VAGINAL') precio = med.precioCervico;
+    if (form.muestra === 'CERVICO VAGINAL')   precio = med.precioCervico;
     else if (form.muestra === 'CITOLOGIA LIQUIDA') precio = med.precioLiquida;
-    else if (form.muestra === 'BIOPSIA') precio = med.precioBiopsia;
+    else if (form.muestra === 'BIOPSIA')       precio = med.precioBiopsia;
     else if (form.muestra === 'CUPULA VAGINAL') precio = med.precioCupula || med.precioCervico;
-    if (precio) setForm(f => ({ ...f, precio: String(precio) }));
+    if (precio !== undefined && precio !== '') setForm(f => ({ ...f, precio: String(precio) }));
   }, [form.medico, form.muestra]);
 
   const medicosFiltrados = medicos.filter(m =>
@@ -98,6 +99,7 @@ export default function Recepcion() {
     setSiguienteId(nextId);
     setForm(formVacio(nextId));
     setMedicoQuery('');
+    setPrecioManual(false);
   };
 
   const editarDeLote = (idx) => {
@@ -135,12 +137,13 @@ export default function Recepcion() {
     setEditIdx(null);
     setForm(formVacio(siguienteId));
     setMedicoQuery('');
+    setPrecioManual(false);
   };
 
   return (
     <div className="fade-in">
       {/* ── FORMULARIO ── */}
-      <Card title="Registrar citologías — Lote del día" icon={ClipboardPlus}
+      <Card title="Registrar citologías — Lote del día" icon={ClipboardList}
         action={
           <div className="btn-group">
             <Btn onClick={limpiarForm}>Limpiar</Btn>
@@ -182,26 +185,35 @@ export default function Recepcion() {
                 borderRadius:7, boxShadow:'var(--shadow)', maxHeight:200,
                 overflowY:'auto'
               }}>
-                {medicosFiltrados.map((m,i) => (
-                  <div key={i}
-                    onMouseDown={() => seleccionarMedico(m)}
-                    style={{
-                      padding:'9px 14px', cursor:'pointer', fontSize:12,
-                      borderBottom:'1px solid #fdf4f8', color:'var(--text-2)'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background='var(--rosa-paler)'}
-                    onMouseLeave={e => e.currentTarget.style.background='#fff'}
-                  >
-                    <span style={{ fontWeight:500 }}>{m.nombre}</span>
-                    <span style={{ color:'var(--text-3)', marginLeft:8, fontSize:11 }}>{m.tipo}</span>
-                  </div>
-                ))}
+                {medicosFiltrados.map((m,i) => {
+                    let precioRef = '';
+                    if (form.muestra === 'CERVICO VAGINAL') precioRef = m.precioCervico;
+                    else if (form.muestra === 'CITOLOGIA LIQUIDA') precioRef = m.precioLiquida;
+                    else if (form.muestra === 'BIOPSIA') precioRef = m.precioBiopsia;
+                    else if (form.muestra === 'CUPULA VAGINAL') precioRef = m.precioCupula || m.precioCervico;
+                    return (
+                      <div key={i}
+                        onMouseDown={() => { seleccionarMedico(m); setPrecioManual(false); }}
+                        style={{ padding:'9px 14px', cursor:'pointer', fontSize:12, borderBottom:'1px solid #fdf4f8', color:'var(--text-2)', display:'flex', justifyContent:'space-between', alignItems:'center' }}
+                        onMouseEnter={e => e.currentTarget.style.background='var(--rosa-paler)'}
+                        onMouseLeave={e => e.currentTarget.style.background='#fff'}>
+                        <span>
+                          <span style={{ fontWeight:500 }}>{m.nombre}</span>
+                          <span style={{ color:'var(--text-3)', marginLeft:8, fontSize:10 }}>{m.tipo}</span>
+                        </span>
+                        {precioRef && <span style={{ color:'var(--rosa)', fontWeight:700, fontSize:12 }}>${precioRef}</span>}
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>
           <div className="form-group">
-            <label className="form-label">Precio ($)</label>
-            <input type="number" name="precio" className="form-input" value={form.precio} onChange={handleChange} step="0.50" min="0"/>
+            <label className="form-label">Precio ($) <span style={{ color:'var(--text-3)', fontWeight:400, fontSize:10 }}>— auto según médico, editable</span></label>
+            <input type="number" name="precio" className="form-input" value={form.precio}
+              onChange={e => { setPrecioManual(true); handleChange(e); }}
+              onBlur={() => {}} step="0.50" min="0"
+              style={{ borderColor: precioManual ? 'var(--rosa-light)' : '' }}/>
           </div>
           {/* Fila 2: Nombre (ancho completo) */}
           <div className="form-group span2">
@@ -256,7 +268,7 @@ export default function Recepcion() {
       {/* ── LOTE ACTUAL ── */}
       <Card
         title={`Lote actual — ${lote.length} registro${lote.length!==1?'s':''}`}
-        icon={ClipboardPlus}
+        icon={ClipboardList}
         action={
           <div className="btn-group">
             <Btn variant="danger" icon={X} onClick={() => { setLote([]); limpiarForm(); }}>Cancelar lote</Btn>
