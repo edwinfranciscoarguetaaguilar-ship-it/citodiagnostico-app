@@ -1,11 +1,12 @@
-import { LayoutDashboard, ClipboardPlus, Microscope, Stethoscope, FileText, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, FlaskConical, Activity, FileText, Settings, LogOut, List } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 const NAV = [
   { id: 'dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
-  { id: 'recepcion',    label: 'Recepción',    icon: ClipboardPlus },
-  { id: 'diagnostico',  label: 'Diagnóstico',  icon: Microscope },
-  { id: 'medicos',      label: 'Médicos',      icon: Stethoscope },
+  { id: 'recepcion',    label: 'Recepción',    icon: ClipboardList },
+  { id: 'citologias',   label: 'Citologías',   icon: List },
+  { id: 'diagnostico',  label: 'Diagnóstico',  icon: FlaskConical },
+  { id: 'medicos',      label: 'Médicos',      icon: Activity },
   { id: 'facturacion',  label: 'Facturación',  icon: FileText },
   { id: 'config',       label: 'Configuración',icon: Settings },
 ];
@@ -16,6 +17,7 @@ export default function Sidebar({ page, setPage }) {
   const paginasPermitidas = {
     dashboard:   true,
     recepcion:   puede('recepcion'),
+    citologias:  true,
     diagnostico: puede('diagnostico'),
     medicos:     puede('medicos'),
     facturacion: puede('finanzas'),
