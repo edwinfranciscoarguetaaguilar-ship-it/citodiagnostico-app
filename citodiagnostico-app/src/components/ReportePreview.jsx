@@ -8,6 +8,37 @@ function driveImg(url) {
   return match ? `https://drive.google.com/uc?export=view&id=${match[0]}` : url;
 }
 
+// Imprime solo el reporte abriendo ventana nueva
+function imprimirReporte(contenidoId) {
+  const el = document.getElementById(contenidoId);
+  if (!el) { window.print(); return; }
+
+  const ventana = window.open('', '_blank', 'width=800,height=900');
+  ventana.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Reporte Citológico</title>
+      <style>
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
+        body { margin: 0; padding: 16px; font-family: Arial, sans-serif; background: #fff; }
+        @media print { body { padding: 0; } }
+      </style>
+    </head>
+    <body>
+      ${el.outerHTML}
+      <script>
+        window.onload = function() {
+          setTimeout(function() { window.print(); window.close(); }, 500);
+        };
+      </script>
+    </body>
+    </html>
+  `);
+  ventana.document.close();
+}
+
 export default function ReportePreview({ cito, dx, onPrint, onGuardarDrive }) {
   const { config } = useApp();
   const c = config || {};
@@ -40,7 +71,7 @@ export default function ReportePreview({ cito, dx, onPrint, onGuardarDrive }) {
     <div>
       {/* Botones — se ocultan al imprimir */}
       <div className="btn-group no-print" style={{ justifyContent:'center', marginBottom:18 }}>
-        <button className="btn" onClick={onPrint}>🖨️ Imprimir (2 copias)</button>
+        <button className="btn" onClick={() => imprimirReporte('reporte-imprimible')}>🖨️ Imprimir</button>
         <button className="btn btn-primary" onClick={onGuardarDrive}>☁️ Guardar en Drive + marcar REALIZADO</button>
       </div>
 
