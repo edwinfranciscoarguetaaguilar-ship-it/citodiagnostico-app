@@ -5,6 +5,7 @@ import { Toast } from './components/UI';
 import Login        from './pages/Login';
 import Dashboard    from './pages/Dashboard';
 import Recepcion    from './pages/Recepcion';
+import Citologias   from './pages/Citologias';
 import Diagnostico  from './pages/Diagnostico';
 import Medicos      from './pages/Medicos';
 import Facturacion  from './pages/Facturacion';
@@ -13,6 +14,7 @@ import Configuracion from './pages/Configuracion';
 const PAGE_TITLES = {
   dashboard:   'Dashboard',
   recepcion:   'Recepción — Registro de citologías',
+  citologias:  'Citologías — Listado y control',
   diagnostico: 'Diagnóstico — Generar reporte',
   medicos:     'Médicos y laboratorios',
   facturacion: 'Facturación',
@@ -47,6 +49,7 @@ function AppInner() {
         <main className="page-body">
           {page === 'dashboard'   && <Dashboard   setPage={setPage}/>}
           {page === 'recepcion'   && <Recepcion/>}
+          {page === 'citologias'  && <Citologias/>}
           {page === 'diagnostico' && <Diagnostico/>}
           {page === 'medicos'     && <Medicos/>}
           {page === 'facturacion' && <Facturacion/>}
