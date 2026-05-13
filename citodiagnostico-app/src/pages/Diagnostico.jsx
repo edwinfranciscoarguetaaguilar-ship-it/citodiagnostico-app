@@ -347,7 +347,7 @@ export default function Diagnostico() {
                   </div>
                   <div className="btn-group" style={{ flexWrap:'wrap' }}>
                     {pdfData.urlPDF&&<a href={pdfData.urlPDF} target="_blank" rel="noreferrer" className="btn btn-sm">📄 Ver PDF</a>}
-                    <Btn size="sm" icon={Printer} onClick={()=>window.print()}>Imprimir</Btn>
+                    <Btn size="sm" icon={Printer} onClick={()=>{const el=document.getElementById('reporte-imprimible');if(!el)return;const v=window.open('','_blank','width=800,height=900');v.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte</title><style>*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box}body{margin:0;padding:16px;font-family:Arial,sans-serif}</style></head><body>'+el.outerHTML+'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();window.close()},500)}<\/scr'+'ipt></body></html>');v.document.close();}}>Imprimir</Btn>
                     <button onClick={abrirWhatsApp} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 14px', borderRadius:7, fontSize:12, fontWeight:600, background:'#25d366', color:'#fff', border:'none', cursor:'pointer' }}>
                       <Phone size={14}/> Enviar por WhatsApp
                     </button>
