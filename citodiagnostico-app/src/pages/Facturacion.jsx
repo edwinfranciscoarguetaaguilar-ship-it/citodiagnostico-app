@@ -1,217 +1,230 @@
+import { useState, useEffect } from 'react';
+import { FileText, Download, CheckCircle } from 'lucide-react';
+import { Card, Btn, PagoPill, Modal, Spinner } from '../components/UI';
+import { api } from '../utils/api';
 import { useApp } from '../context/AppContext';
 
-// Convierte URL de Drive a URL directa de imagen
-function driveImg(url) {
-  if (!url) return '';
-  if (url.includes('uc?')) return url;
-  const match = url.match(/[-\w]{25,}/);
-  return match ? `https://drive.google.com/uc?export=view&id=${match[0]}` : url;
-}
-
-export default function ReportePreview({ cito, dx, onPrint, onGuardarDrive }) {
-  const { config } = useApp();
-  const c = config || {};
-
-  const labNombre  = c['LAB_NOMBRE']    || 'Centro Citodiagnóstico de la Mujer';
-  const labTel     = c['LAB_TELEFONO']  || '';
-  const labEmail   = c['LAB_EMAIL']     || '';
-  const labDir     = c['LAB_DIRECCION'] || '';
-  const labLogo    = driveImg(c['LAB_LOGO_URL'] || '');
-  const citoNombre = c['CITO_NOMBRE']   || '';
-  const citoTitulo = c['CITO_TITULO']   || '';
-  const citoColegiado = c['CITO_COLEGIADO'] || '';
-  const citoCargo  = c['CITO_CARGO']    || '';
-  const citoFirma  = driveImg(c['CITO_FIRMA_URL'] || '');
-  const labSlogan  = c['LAB_SLOGAN']    || 'Diagnóstico confiable en tiempo récord';
-  const labNota    = c['REPORTE_NOTA']  || 'NOTA: LÁMINAS SE CONSERVARÁN ÚNICAMENTE POR 6 MESES DESPUÉS DE RECIBIDA LA MUESTRA.';
-
+export default function Facturacion() {
+  const { medicos, mostrarToast } = useApp();
   const ahora = new Date();
-  const fechaReporte = ahora.toLocaleDateString('es-SV', { day:'2-digit', month:'2-digit', year:'numeric' })
-    + ' ' + ahora.toLocaleTimeString('es-SV', { hour:'2-digit', minute:'2-digit' });
+  const [mes,    setMes]    = useState(String(ahora.getMonth() + 1).padStart(2,'0'));
+  const [anio,   setAnio]   = useState(String(ahora.getFullYear()));
+  const [filtroM,setFiltroM]= useState('');
+  const [data,   setData]   = useState([]);
+  const [cargando, setCargando] = useState(false);
+  const [detalleModal, setDetalleModal] = useState(null); // médico seleccionado para ver detalle
 
-  const dx1 = dx?.dx1 || dx?.interpretacion || '';
-  const dx2 = dx?.dx2 || '';
-  const dx3 = dx?.dx3 || '';
-  const dx4 = dx?.dx4 || '';
+  useEffect(() => { cargar(); }, [mes, anio]);
 
-  const esLiquida = cito?.muestra === 'CITOLOGIA LIQUIDA';
+  const cargar = async () => {
+    setCargando(true);
+    try {
+      const res = await api.getResumenMes(mes, anio);
+      setData(res);
+    } catch(e) {
+      mostrarToast('Error cargando facturación: ' + e.message, 'error');
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const datosFiltrados = data
+    .filter(d => filtroM === '' || d.medico.toLowerCase().includes(filtroM.toLowerCase()))
+    // Solo médicos con registros (data ya viene filtrada del GAS, pero por si acaso)
+    .filter(d => d.totalCitos > 0)
+    // Pendientes primero, luego por monto total
+    .sort((a, b) => {
+      const pendA = parseFloat(a.pendiente || 0);
+      const pendB = parseFloat(b.pendiente || 0);
+      if (pendB !== pendA) return pendB - pendA;
+      return parseFloat(b.montoTotal || 0) - parseFloat(a.montoTotal || 0);
+    });
+
+  const totalGeneral  = datosFiltrados.reduce((s,d) => s + parseFloat(d.montoTotal||0), 0);
+  const totalPagado   = datosFiltrados.reduce((s,d) => s + parseFloat(d.pagado||0), 0);
+  const totalPendiente= datosFiltrados.reduce((s,d) => s + parseFloat(d.pendiente||0), 0);
+  const totalTransfer = datosFiltrados.reduce((s,d) => s + parseFloat(d.transferencia||0), 0);
+
+  const marcarPagado = async (idCito) => {
+    try {
+      await api.actualizarPago(idCito, 'PAGADO');
+      mostrarToast('Marcado como PAGADO: ' + idCito);
+      // Actualizar estado local
+      setDetalleModal(prev => ({
+        ...prev,
+        detalle: prev.detalle.map(d => d.idCito===idCito ? {...d, pagado:'PAGADO'} : d)
+      }));
+      cargar();
+    } catch(e) {
+      mostrarToast('Error: ' + e.message, 'error');
+    }
+  };
+
+  const exportarCSV = () => {
+    const rows = [
+      ['Médico','Total citos','Monto total','Pagado','Transferencia','Pendiente'],
+      ...datosFiltrados.map(d => [d.medico, d.totalCitos, d.montoTotal, d.pagado, d.transferencia, d.pendiente])
+    ];
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type:'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=`facturacion-${mes}-${anio}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const meses = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+  const nomMeses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
   return (
-    <div>
-      {/* Botones — se ocultan al imprimir */}
-      <div className="btn-group no-print" style={{ justifyContent:'center', marginBottom:18 }}>
-        <button className="btn" onClick={onPrint}>🖨️ Imprimir (2 copias)</button>
-        <button className="btn btn-primary" onClick={onGuardarDrive}>☁️ Guardar en Drive + marcar REALIZADO</button>
+    <div className="fade-in">
+      {/* ── FILTROS ── */}
+      <Card>
+        <div style={{ padding:'14px 20px', display:'flex', gap:14, flexWrap:'wrap', alignItems:'flex-end' }}>
+          <div className="form-group">
+            <label className="form-label">Mes</label>
+            <select className="form-select" value={mes} onChange={e => setMes(e.target.value)} style={{ width:140 }}>
+              {meses.map((m,i) => <option key={m} value={m}>{nomMeses[i]}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Año</label>
+            <select className="form-select" value={anio} onChange={e => setAnio(e.target.value)} style={{ width:100 }}>
+              {['2024','2025','2026','2027'].map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+          <div className="form-group" style={{ flex:1, minWidth:200 }}>
+            <label className="form-label">Filtrar por médico</label>
+            <input className="form-input" placeholder="Nombre del médico..."
+              value={filtroM} onChange={e => setFiltroM(e.target.value)}/>
+          </div>
+          <Btn variant="primary" onClick={cargar}>Actualizar</Btn>
+          <Btn icon={Download} onClick={exportarCSV}>Exportar CSV</Btn>
+        </div>
+      </Card>
+
+      {/* ── RESUMEN TOTALES ── */}
+      <div className="metrics-grid" style={{ gridTemplateColumns:'repeat(4,1fr)' }}>
+        <div className="metric-card">
+          <div className="metric-label">Total mes</div>
+          <div className="metric-value">${totalGeneral.toFixed(2)}</div>
+          <div className="metric-sub">{datosFiltrados.reduce((s,d)=>s+d.totalCitos,0)} citologías</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label">Cobrado</div>
+          <div className="metric-value" style={{ color:'#0a6640' }}>${totalPagado.toFixed(2)}</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label">Transferencias</div>
+          <div className="metric-value" style={{ color:'#1e40af' }}>${totalTransfer.toFixed(2)}</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label">Pendiente por cobrar</div>
+          <div className="metric-value" style={{ color:'#991b1b' }}>${totalPendiente.toFixed(2)}</div>
+        </div>
       </div>
 
-      {/* ── HOJA DEL REPORTE ─────────────────────────────────── */}
-      <div id="reporte-imprimible" style={{
-        maxWidth: 680, margin:'0 auto',
-        background:'#fff', border:'1px solid #ccc',
-        fontFamily:'Arial, sans-serif', fontSize:'11px', color:'#111'
-      }}>
+      {/* ── TABLA PRINCIPAL ── */}
+      <Card title={`Facturación — ${nomMeses[parseInt(mes)-1]} ${anio}`} icon={FileText}>
+        {cargando
+          ? <div style={{ padding:40, textAlign:'center' }}><Spinner/></div>
+          : <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Médico</th><th>Citos</th><th>Monto total</th>
+                    <th>Pagado</th><th>Transferencia</th><th>Pendiente</th>
+                    <th>Saldo</th><th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {datosFiltrados.length === 0 && (
+                    <tr><td colSpan={8} style={{ textAlign:'center', color:'var(--text-3)', padding:24 }}>
+                      Sin datos para el período seleccionado
+                    </td></tr>
+                  )}
+                  {datosFiltrados.map((d,i) => (
+                    <tr key={i}>
+                      <td style={{ fontWeight:500 }}>{d.medico}</td>
+                      <td>{d.totalCitos}</td>
+                      <td style={{ fontWeight:600 }}>${d.montoTotal}</td>
+                      <td><span style={{ color:'#0a6640', fontWeight:600 }}>${d.pagado}</span></td>
+                      <td><span style={{ color:'#1e40af', fontWeight:600 }}>${d.transferencia}</span></td>
+                      <td><span style={{ color: parseFloat(d.pendiente)>0?'#991b1b':'var(--text-3)', fontWeight:600 }}>${d.pendiente}</span></td>
+                      <td>
+                        {parseFloat(d.saldo) > 0
+                          ? <span style={{ color:'#991b1b', fontWeight:700 }}>${d.saldo}</span>
+                          : <span style={{ color:'#0a6640' }}>✅ Al día</span>
+                        }
+                      </td>
+                      <td>
+                        <Btn size="sm" onClick={() => setDetalleModal(d)}>Ver detalle</Btn>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {/* Totales */}
+              <div className="fin-total-bar">
+                <span>Total: <strong>${totalGeneral.toFixed(2)}</strong></span>
+                <span style={{ color:'#0a6640' }}>Cobrado: <strong>${totalPagado.toFixed(2)}</strong></span>
+                <span style={{ color:'#1e40af' }}>Transferencia: <strong>${totalTransfer.toFixed(2)}</strong></span>
+                <span style={{ color:'#991b1b' }}>Pendiente: <strong>${totalPendiente.toFixed(2)}</strong></span>
+              </div>
+            </div>
+        }
+      </Card>
 
-        {/* ENCABEZADO — logo horizontal a la izquierda, contacto a la derecha */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 18px', borderBottom:'2px solid #802f58' }}>
-          <div style={{ flex:1 }}>
-            {labLogo
-              ? <img src={labLogo} alt="Logo" style={{ maxHeight:65, maxWidth:220, objectFit:'contain' }} onError={e=>e.target.style.display='none'}/>
-              : <div style={{ fontWeight:'bold', fontSize:14, color:'#802f58' }}>{labNombre}</div>
-            }
-          </div>
-          <div style={{ textAlign:'right', fontSize:'10px', color:'#444', lineHeight:1.9 }}>
-            {labTel && <div>📞 {labTel}</div>}
-            {labEmail && <div>✉️ {labEmail}</div>}
-            {labDir && <div>📍 {labDir}</div>}
-          </div>
-        </div>
-
-        {/* TÍTULO */}
-        <div style={{ background:'#802f58', color:'#fff', textAlign:'center', padding:'7px', fontSize:'12px', fontWeight:'bold', letterSpacing:'0.08em' }}>
-          REPORTE DE ESTUDIO CITOLÓGICO
-        </div>
-
-        {/* DATOS DEL PACIENTE */}
-        <div style={{ padding:'10px 18px', borderBottom:'1px solid #ddd' }}>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px 16px' }}>
-            <div>
-              <div style={{ fontSize:'9px', textTransform:'uppercase', color:'#888', letterSpacing:'0.05em' }}>Nombre de la Paciente:</div>
-              <div style={{ fontWeight:'bold', fontSize:'12px' }}>{cito?.nombre || ''}</div>
+      {/* ── MODAL DETALLE DE MÉDICO ── */}
+      <Modal
+        open={!!detalleModal}
+        onClose={() => setDetalleModal(null)}
+        title={detalleModal ? `Detalle — ${detalleModal.medico}` : ''}
+        size="lg"
+        footer={<Btn onClick={() => setDetalleModal(null)}>Cerrar</Btn>}
+      >
+        {detalleModal && (
+          <div>
+            <div style={{ display:'flex', gap:16, marginBottom:16, flexWrap:'wrap' }}>
+              <div style={{ background:'var(--rosa-pale)', padding:'10px 16px', borderRadius:8, fontSize:12 }}>
+                <div style={{ color:'var(--text-3)', marginBottom:2 }}>Total</div>
+                <strong style={{ fontSize:16, color:'var(--rosa)' }}>${detalleModal.montoTotal}</strong>
+              </div>
+              <div style={{ background:'#d1fae5', padding:'10px 16px', borderRadius:8, fontSize:12 }}>
+                <div style={{ color:'var(--text-3)', marginBottom:2 }}>Pagado</div>
+                <strong style={{ fontSize:16, color:'#065f46' }}>${detalleModal.pagado}</strong>
+              </div>
+              <div style={{ background:'#fde8e8', padding:'10px 16px', borderRadius:8, fontSize:12 }}>
+                <div style={{ color:'var(--text-3)', marginBottom:2 }}>Pendiente</div>
+                <strong style={{ fontSize:16, color:'#991b1b' }}>${detalleModal.pendiente}</strong>
+              </div>
             </div>
-            <div>
-              <div style={{ fontSize:'9px', textTransform:'uppercase', color:'#888' }}>Refiere:</div>
-              <div style={{ fontWeight:'bold', fontSize:'11px' }}>{cito?.medico || ''}</div>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th># Cito</th><th>Paciente</th><th>Fecha</th><th>Precio</th><th>Estado pago</th><th>Acción</th></tr></thead>
+                <tbody>
+                  {(detalleModal.detalle||[]).map((item,i) => (
+                    <tr key={i}>
+                      <td style={{ color:'var(--rosa)', fontWeight:600 }}>{item.idCito}</td>
+                      <td>{item.nombre}</td>
+                      <td style={{ fontSize:11 }}>{item.fecha}</td>
+                      <td>${item.precio}</td>
+                      <td><PagoPill pago={item.pagado}/></td>
+                      <td>
+                        {item.pagado === 'PENDIENTE' && (
+                          <Btn size="sm" icon={CheckCircle} variant="primary"
+                            onClick={() => marcarPagado(item.idCito)}>
+                            Marcar pagado
+                          </Btn>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div style={{ textAlign:'right' }}>
-              <div style={{ fontSize:'9px', textTransform:'uppercase', color:'#888' }}>N° Citología:</div>
-              <div style={{ fontWeight:'bold', fontSize:'16px', color:'#802f58' }}>{cito?.idCito || ''}</div>
-            </div>
-            <div>
-              <div style={{ fontSize:'9px', textTransform:'uppercase', color:'#888' }}>Edad:</div>
-              <div style={{ fontWeight:'500' }}>{cito?.edad ? cito.edad + ' AÑOS' : ''}</div>
-            </div>
-            <div>
-              <div style={{ fontSize:'9px', textTransform:'uppercase', color:'#888', fontWeight:'bold', color:'#802f58' }}>TIPO DE MUESTRA:</div>
-              <div style={{ fontWeight:'bold', color:'#802f58' }}>{dx?.tipoMuestra || 'EXTENDIDO CONVENCIONAL'}</div>
-            </div>
-            <div>
-              <div style={{ fontSize:'9px', textTransform:'uppercase', color:'#888', fontWeight:'bold', color:'#802f58' }}>MUESTRA RECIBIDA</div>
-              <div style={{ fontWeight:'bold', color: esLiquida?'#1e40af':'#802f58' }}>{cito?.muestra || ''}</div>
-            </div>
-            <div>
-              <div style={{ fontSize:'9px', textTransform:'uppercase', color:'#888' }}>Fecha de Recepción:</div>
-              <div>{cito?.fecha || ''}</div>
-            </div>
-            <div>
-              <div style={{ fontSize:'9px', textTransform:'uppercase', color:'#888' }}>Fecha de Reporte:</div>
-              <div>{fechaReporte}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Indicador líquida */}
-        {esLiquida && (
-          <div style={{ background:'#eff6ff', borderBottom:'1px solid #bfdbfe', padding:'4px 18px', fontSize:'10px', fontWeight:'bold', color:'#1e40af' }}>
-            💧 CITOLOGÍA EN BASE LÍQUIDA
           </div>
         )}
-
-        {/* CALIDAD DE MUESTRA */}
-        <div style={{ padding:'8px 18px', borderBottom:'1px solid #eee', fontSize:'11px', background:'#fdf9fb' }}>
-          {dx?.calidad || ''}
-        </div>
-
-        {/* INTERPRETACIÓN */}
-        <div style={{ padding:'4px 18px 0' }}>
-          <div style={{ background:'#802f58', color:'#fff', fontSize:'10px', fontWeight:'bold', textTransform:'uppercase', letterSpacing:'0.06em', padding:'3px 10px', borderRadius:3, display:'inline-block', margin:'8px 0 5px' }}>
-            INTERPRETACIÓN DE RESULTADOS:
-          </div>
-          <div style={{ fontSize:'11px', lineHeight:1.6, paddingLeft:4, paddingBottom:6 }}>{dx1}</div>
-        </div>
-
-        {/* HALLAZGOS NO NEOPLÁSICOS */}
-        <div style={{ padding:'0 18px' }}>
-          <div style={{ background:'#802f58', color:'#fff', fontSize:'10px', fontWeight:'bold', textTransform:'uppercase', letterSpacing:'0.06em', padding:'3px 10px', borderRadius:3, display:'inline-block', margin:'8px 0 6px' }}>
-            HALLAZGOS NO NEOPLÁSICOS:
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'190px 1fr', gap:'3px 8px', fontSize:'11px', paddingBottom:6 }}>
-            <span style={{ color:'#666' }}>VARIACIONES CELULARES NO NEOPLÁSICOS:</span>
-            <span>{dx?.variaciones || ''}</span>
-            <span></span>
-            <span>{dx?.cambiosReactivos || ''}</span>
-            <span style={{ color:'#666' }}>FLORA BACTERIANA:</span>
-            <span>{dx?.flora || ''}</span>
-            <span style={{ color:'#666' }}>MICROORGANISMOS:</span>
-            <span>{dx?.microorganismos || ''}</span>
-          </div>
-          {dx?.observaciones && dx.observaciones !== 'SIN OBSERVACIONES' && (
-            <div style={{ fontSize:'11px', paddingBottom:6 }}>{dx.observaciones}</div>
-          )}
-          {(!dx?.observaciones || dx.observaciones === 'SIN OBSERVACIONES') && (
-            <div style={{ fontSize:'11px', paddingBottom:6, color:'#555' }}>SIN OBSERVACIONES</div>
-          )}
-        </div>
-
-        {/* DIAGNÓSTICO */}
-        <div style={{ padding:'0 18px' }}>
-          <div style={{ background:'#802f58', color:'#fff', fontSize:'10px', fontWeight:'bold', textTransform:'uppercase', letterSpacing:'0.06em', padding:'3px 10px', borderRadius:3, display:'inline-block', margin:'8px 0 6px' }}>
-            DIAGNÓSTICO:
-          </div>
-          <div style={{ fontSize:'11px', lineHeight:1.8, paddingBottom:8 }}>
-            {dx1 && <div>{dx1}</div>}
-            {dx2 && <div>{dx2}</div>}
-            {dx3 && <div>{dx3}</div>}
-            {dx4 && <div>{dx4}</div>}
-          </div>
-        </div>
-
-        {/* COMENTARIOS */}
-        <div style={{ padding:'0 18px 10px' }}>
-          <div style={{ background:'#802f58', color:'#fff', fontSize:'10px', fontWeight:'bold', textTransform:'uppercase', letterSpacing:'0.06em', padding:'3px 10px', borderRadius:3, display:'inline-block', margin:'8px 0 6px' }}>
-            COMENTARIOS Y SUGERENCIAS
-          </div>
-          <div style={{ fontSize:'11px', lineHeight:1.6, minHeight:32 }}>
-            {dx?.comentarios || 'SIN COMENTARIOS RELACIONADOS'}
-            {dx?.comentariosLibres && <div style={{ marginTop:4 }}>{dx.comentariosLibres}</div>}
-          </div>
-        </div>
-
-        {/* FIRMA Y SELLO */}
-        <div style={{ display:'flex', justifyContent:'center', padding:'16px 18px', borderTop:'1px solid #eee' }}>
-          <div style={{ textAlign:'center', border:'1px solid #ddd', padding:'10px 28px', borderRadius:6, minWidth:200 }}>
-            {citoFirma
-              ? <img src={citoFirma} alt="Firma y sello" style={{ maxHeight:90, maxWidth:220, objectFit:'contain', display:'block', margin:'0 auto 8px' }} onError={e=>e.target.style.display='none'}/>
-              : <div style={{ height:50, borderBottom:'1px solid #ccc', width:180, margin:'0 auto 8px' }}/>
-            }
-            <div style={{ fontWeight:'bold', fontSize:'11px' }}>{citoNombre}</div>
-            <div style={{ fontSize:'9px', color:'#666' }}>{citoTitulo}</div>
-            <div style={{ fontSize:'9px', color:'#666' }}>{citoColegiado}</div>
-            <div style={{ fontSize:'9px', color:'#666', fontWeight:'bold' }}>{citoCargo}</div>
-          </div>
-        </div>
-
-        {/* PIE */}
-        <div style={{ textAlign:'center', padding:'8px 18px 12px', borderTop:'1px solid #eee' }}>
-          <div style={{ fontStyle:'italic', color:'#802f58', fontSize:'12px', fontWeight:'bold' }}>
-            "{labSlogan}"
-          </div>
-          <div style={{ fontSize:'9px', color:'#888', marginTop:4 }}>{labNota}</div>
-          <div style={{ fontSize:'9px', color:'#aaa', marginTop:6 }}>Fecha de reporte: {fechaReporte}</div>
-        </div>
-
-      </div>
-
-      {/* Estilos de impresión */}
-      <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          #reporte-imprimible {
-            max-width: 100% !important;
-            border: none !important;
-            margin: 0 !important;
-          }
-        }
-      `}</style>
+      </Modal>
     </div>
   );
 }
