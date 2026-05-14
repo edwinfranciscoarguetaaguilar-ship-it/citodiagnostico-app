@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 function driveImg(url) {
   if (!url) return '';
   let id = '';
-  if (url.includes('uc?') || url.includes('thumbnail?')) {
+  if (url.includes('id=')) {
     const m = url.match(/id=([^&]+)/);
     id = m ? m[1] : '';
   } else {
@@ -12,7 +12,7 @@ function driveImg(url) {
     id = m ? m[0] : '';
   }
   if (!id) return url;
-  return 'https://drive.google.com/thumbnail?id=' + id + '&sz=w400';
+  return 'https://lh3.googleusercontent.com/d/' + id;
 }
 
 async function toBase64(url) {
