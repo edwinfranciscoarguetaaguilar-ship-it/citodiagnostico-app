@@ -68,6 +68,11 @@ export const api = {
   getEgresos:    (mes, anio) => apiGet('getEgresos', { mes, anio }),
   registrarEgreso: (data) => apiPost('registrarEgreso', data),
 
-  // Config
-  actualizarConfig: (config) => apiPost('actualizarConfig', { config }),
+  // Inventario frascos
+  getResumenInventario:  () => apiGet('getResumenInventario'),
+  getHistorialStock:     () => apiGet('getHistorialStock'),
+  registrarStockEntrada: (data) => apiPost('registrarStockEntrada', data),
+  registrarEntrega:      (data) => apiPost('registrarEntrega', data),
+  marcarEntregaPagada:   (id)   => apiPost('marcarEntregaPagada', { id }),
+  marcarRetirado:        (id)   => apiPost('marcarRetirado', { id }),
 };
