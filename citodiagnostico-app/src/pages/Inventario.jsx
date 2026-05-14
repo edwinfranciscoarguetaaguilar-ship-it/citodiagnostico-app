@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, Btn, Modal, Spinner } from '../components/UI';
 import { api } from '../utils/api';
 import { useApp } from '../context/AppContext';
@@ -27,19 +27,24 @@ export default function Inventario() {
     proveedor: '', factura: '', notas: ''
   });
 
-  useEffect(() => { cargar(); }, []);
-
-  const cargar = async () => {
-    setCargando(true);
+  // Cargar silencioso — no bloquea UI, muestra datos anteriores mientras actualiza
+  const cargar = useCallback(async (silencioso = false) => {
+    if (!silencioso) setCargando(true);
     try {
-      const res = await api.getResumenInventario();
-      setData(res);
+      const [resumen, historial] = await Promise.all([
+        api.getResumenInventario(),
+        api.getHistorialStock()
+      ]);
+      setData({ ...resumen, historialStock: historial });
     } catch (e) {
-      mostrarToast('Error cargando inventario: ' + e.message, 'error');
+      if (!silencioso) mostrarToast('Error: ' + e.message, 'error');
     } finally {
       setCargando(false);
     }
-  };
+  }, []);
+
+  // Cargar al montar
+  useEffect(() => { cargar(); }, [cargar]);
 
   const medicosFiltrados = medicos.filter(m =>
     m.activo === 'SI' &&
@@ -62,7 +67,7 @@ export default function Inventario() {
       setModalEntrega(false);
       setFormE({ fecha: hoy(), medico: '', cantidad: 1, precioUnit: '', modalidad: 'COMODATO', notas: '' });
       setMedicoQuery('');
-      cargar();
+      cargar(true); // silencioso — no muestra spinner
     } catch (e) {
       mostrarToast('Error: ' + e.message, 'error');
     } finally {
@@ -78,7 +83,7 @@ export default function Inventario() {
       mostrarToast('Ingreso registrado');
       setModalStock(false);
       setFormS({ fecha: hoy(), cantidad: '', costoUnit: '', proveedor: '', factura: '', notas: '' });
-      cargar();
+      cargar(true);
     } catch (e) {
       mostrarToast('Error: ' + e.message, 'error');
     } finally {
@@ -90,7 +95,7 @@ export default function Inventario() {
     try {
       await api.marcarEntregaPagada(id);
       mostrarToast('Marcado como pagado');
-      cargar();
+      cargar(true);
     } catch (e) { mostrarToast('Error: ' + e.message, 'error'); }
   };
 
@@ -98,7 +103,7 @@ export default function Inventario() {
     try {
       await api.marcarRetirado(id);
       mostrarToast('Marcado como retirado');
-      cargar();
+      cargar(true);
     } catch (e) { mostrarToast('Error: ' + e.message, 'error'); }
   };
 
@@ -110,48 +115,46 @@ export default function Inventario() {
   return (
     <div className="fade-in">
 
-      {cargando ? (
-        <div style={{ padding: 60, textAlign: 'center' }}><Spinner /></div>
-      ) : (
-        <>
-          {/* Metricas */}
-          <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
-            <div className="metric-card accent">
-              <div className="metric-label">Disponible</div>
-              <div className="metric-value">{s.disponible || 0}</div>
-              <div className="metric-sub">frascos en laboratorio</div>
-            </div>
-            <div className="metric-card">
-              <div className="metric-label">En clinicas</div>
-              <div className="metric-value" style={{ color: '#856404' }}>{s.enClinicas || 0}</div>
-              <div className="metric-sub">frascos entregados</div>
-            </div>
-            <div className="metric-card">
-              <div className="metric-label">Pendiente cobro</div>
-              <div className="metric-value" style={{ color: '#991b1b' }}>${parseFloat(s.pendientePago || 0).toFixed(2)}</div>
-              <div className="metric-sub">comodatos sin pagar</div>
-            </div>
-            <div className="metric-card" style={{ borderColor: s.alertas > 0 ? '#f87171' : '' }}>
-              <div className="metric-label">Alertas +15 dias</div>
-              <div className="metric-value" style={{ color: s.alertas > 0 ? '#991b1b' : '#0a6640' }}>{s.alertas || 0}</div>
-              <div className="metric-sub">sin pago pendiente</div>
-            </div>
+      {/* METRICAS — siempre visibles, muestran 0 mientras carga */}
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
+        <div className="metric-card accent">
+          <div className="metric-label">Disponible</div>
+          <div className="metric-value">{cargando && !data ? '—' : (s.disponible || 0)}</div>
+          <div className="metric-sub">frascos en laboratorio</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label">En clinicas</div>
+          <div className="metric-value" style={{ color: '#856404' }}>{cargando && !data ? '—' : (s.enClinicas || 0)}</div>
+          <div className="metric-sub">frascos entregados</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label">Pendiente cobro</div>
+          <div className="metric-value" style={{ color: '#991b1b' }}>
+            {cargando && !data ? '—' : '$' + parseFloat(s.pendientePago || 0).toFixed(2)}
           </div>
+          <div className="metric-sub">comodatos sin pagar</div>
+        </div>
+        <div className="metric-card" style={{ borderColor: s.alertas > 0 ? '#f87171' : '' }}>
+          <div className="metric-label">Alertas +15 dias</div>
+          <div className="metric-value" style={{ color: s.alertas > 0 ? '#991b1b' : '#0a6640' }}>
+            {cargando && !data ? '—' : (s.alertas || 0)}
+          </div>
+          <div className="metric-sub">sin pago pendiente</div>
+        </div>
+      </div>
 
-          {/* Banner alertas */}
-          {alertas.length > 0 && (
-            <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 10, padding: '12px 18px', marginBottom: 16 }}>
-              <div style={{ fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>
-                Alertas: {alertas.length} entrega(s) con mas de 15 dias sin pago
-              </div>
-              {alertas.map((a, i) => (
-                <div key={i} style={{ fontSize: 12, color: '#7f1d1d', marginBottom: 4 }}>
-                  {a.medico} — {a.cantidad} frasco(s) el {a.fechaEntrega} ({a.diasFuera} dias) — Saldo: {a.saldoFrascos} — ${a.total}
-                </div>
-              ))}
+      {/* Banner alertas */}
+      {alertas.length > 0 && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 10, padding: '12px 18px', marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>
+            Alertas: {alertas.length} entrega(s) con mas de 15 dias sin pago
+          </div>
+          {alertas.map((a, i) => (
+            <div key={i} style={{ fontSize: 12, color: '#7f1d1d', marginBottom: 4 }}>
+              {a.medico} — {a.cantidad} frasco(s) el {a.fechaEntrega} ({a.diasFuera} dias) — Saldo: {a.saldoFrascos} — ${a.total}
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
 
       {/* Card principal */}
@@ -165,82 +168,86 @@ export default function Inventario() {
               Historial stock
             </button>
           </div>
-          <Btn onClick={cargar} disabled={cargando}>Actualizar</Btn>
+          <Btn onClick={() => cargar()} disabled={cargando}>
+            {cargando ? <Spinner /> : 'Actualizar'}
+          </Btn>
           <Btn onClick={() => setModalStock(true)}>+ Ingreso frascos</Btn>
           <Btn variant="primary" onClick={() => setModalEntrega(true)}>Registrar entrega</Btn>
         </div>
 
         {/* Tab entregas */}
         {tab === 'entregas' && (
-          entregas.length === 0
-            ? <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)' }}>No hay entregas registradas</div>
-            : <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Medico</th><th>Fecha</th><th>Cant</th><th>Precio</th>
-                      <th>Total</th><th>Modalidad</th><th>Pago</th>
-                      <th>Muestras</th><th>Saldo</th><th>Dias</th><th>Estado</th><th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entregas.map((e, i) => (
-                      <tr key={i} style={{
-                        background: e.alerta ? '#fff5f5' : e.estado === 'COBRADO' ? '#f0fdf4' : e.estado === 'RETIRADO' ? '#f8f8f8' : ''
-                      }}>
-                        <td style={{ fontWeight: 500 }}>{e.medico}</td>
-                        <td style={{ fontSize: 11 }}>{e.fechaEntrega}</td>
-                        <td style={{ textAlign: 'center', fontWeight: 700 }}>{e.cantidad}</td>
-                        <td>${parseFloat(e.precioUnit || 0).toFixed(2)}</td>
-                        <td style={{ fontWeight: 700 }}>${parseFloat(e.total || 0).toFixed(2)}</td>
-                        <td>
-                          <span style={{
-                            fontSize: 11, padding: '2px 8px', borderRadius: 12, fontWeight: 600,
-                            background: e.modalidad === 'PAGADO' ? '#d1fae5' : '#fef3c7',
-                            color: e.modalidad === 'PAGADO' ? '#065f46' : '#92400e'
-                          }}>{e.modalidad}</span>
-                        </td>
-                        <td style={{ fontSize: 11, fontWeight: 600, color: e.pagado ? '#065f46' : '#991b1b' }}>
-                          {e.pagado ? 'Pagado' : 'Pendiente'}
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <span style={{ fontWeight: 600, color: '#1e40af' }}>{e.muestrasRecib}</span>
-                          <span style={{ color: 'var(--text-3)', fontSize: 11 }}> / {e.cantidad}</span>
-                        </td>
-                        <td style={{ textAlign: 'center', fontWeight: 700, color: e.saldoFrascos === 0 ? '#065f46' : '#856404' }}>
-                          {e.saldoFrascos}
-                        </td>
-                        <td style={{ textAlign: 'center', fontWeight: 600, color: e.diasFuera >= 15 && !e.pagado && e.estado === 'ACTIVO' ? '#991b1b' : e.diasFuera >= 7 ? '#856404' : 'var(--text-2)' }}>
-                          {e.diasFuera}d
-                        </td>
-                        <td>
-                          <span style={{
-                            fontSize: 10, padding: '2px 8px', borderRadius: 12, fontWeight: 600,
-                            background: e.estado === 'COBRADO' ? '#d1fae5' : e.estado === 'RETIRADO' ? '#e5e7eb' : '#fef3c7',
-                            color: e.estado === 'COBRADO' ? '#065f46' : e.estado === 'RETIRADO' ? '#374151' : '#92400e'
-                          }}>{e.estado}</span>
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: 4 }}>
-                            {e.estado === 'ACTIVO' && !e.pagado && (
-                              <button onClick={() => marcarPagado(e.id)}
-                                style={{ padding: '4px 8px', borderRadius: 6, border: 'none', background: '#d1fae5', color: '#065f46', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
-                                Pagado
-                              </button>
-                            )}
-                            {e.estado === 'ACTIVO' && !e.pagado && e.diasFuera >= 15 && (
-                              <button onClick={() => marcarRetirado(e.id)}
-                                style={{ padding: '4px 8px', borderRadius: 6, border: 'none', background: '#fee2e2', color: '#991b1b', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
-                                Retirar
-                              </button>
-                            )}
-                          </div>
-                        </td>
+          !data && cargando
+            ? <div style={{ padding: 40, textAlign: 'center' }}><Spinner /></div>
+            : entregas.length === 0
+              ? <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)' }}>No hay entregas registradas</div>
+              : <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Medico</th><th>Fecha</th><th>Cant</th><th>Precio</th>
+                        <th>Total</th><th>Modalidad</th><th>Pago</th>
+                        <th>Muestras</th><th>Saldo</th><th>Dias</th><th>Estado</th><th>Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {entregas.map((e, i) => (
+                        <tr key={i} style={{
+                          background: e.alerta ? '#fff5f5' : e.estado === 'COBRADO' ? '#f0fdf4' : e.estado === 'RETIRADO' ? '#f8f8f8' : ''
+                        }}>
+                          <td style={{ fontWeight: 500 }}>{e.medico}</td>
+                          <td style={{ fontSize: 11 }}>{e.fechaEntrega}</td>
+                          <td style={{ textAlign: 'center', fontWeight: 700 }}>{e.cantidad}</td>
+                          <td>${parseFloat(e.precioUnit || 0).toFixed(2)}</td>
+                          <td style={{ fontWeight: 700 }}>${parseFloat(e.total || 0).toFixed(2)}</td>
+                          <td>
+                            <span style={{
+                              fontSize: 11, padding: '2px 8px', borderRadius: 12, fontWeight: 600,
+                              background: e.modalidad === 'PAGADO' ? '#d1fae5' : '#fef3c7',
+                              color: e.modalidad === 'PAGADO' ? '#065f46' : '#92400e'
+                            }}>{e.modalidad}</span>
+                          </td>
+                          <td style={{ fontSize: 11, fontWeight: 600, color: e.pagado ? '#065f46' : '#991b1b' }}>
+                            {e.pagado ? 'Pagado' : 'Pendiente'}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <span style={{ fontWeight: 600, color: '#1e40af' }}>{e.muestrasRecib}</span>
+                            <span style={{ color: 'var(--text-3)', fontSize: 11 }}> / {e.cantidad}</span>
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: 700, color: e.saldoFrascos === 0 ? '#065f46' : '#856404' }}>
+                            {e.saldoFrascos}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: 600, color: e.diasFuera >= 15 && !e.pagado && e.estado === 'ACTIVO' ? '#991b1b' : e.diasFuera >= 7 ? '#856404' : 'var(--text-2)' }}>
+                            {e.diasFuera}d
+                          </td>
+                          <td>
+                            <span style={{
+                              fontSize: 10, padding: '2px 8px', borderRadius: 12, fontWeight: 600,
+                              background: e.estado === 'COBRADO' ? '#d1fae5' : e.estado === 'RETIRADO' ? '#e5e7eb' : '#fef3c7',
+                              color: e.estado === 'COBRADO' ? '#065f46' : e.estado === 'RETIRADO' ? '#374151' : '#92400e'
+                            }}>{e.estado}</span>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: 4 }}>
+                              {e.estado === 'ACTIVO' && !e.pagado && (
+                                <button onClick={() => marcarPagado(e.id)}
+                                  style={{ padding: '4px 8px', borderRadius: 6, border: 'none', background: '#d1fae5', color: '#065f46', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
+                                  Pagado
+                                </button>
+                              )}
+                              {e.estado === 'ACTIVO' && !e.pagado && e.diasFuera >= 15 && (
+                                <button onClick={() => marcarRetirado(e.id)}
+                                  style={{ padding: '4px 8px', borderRadius: 6, border: 'none', background: '#fee2e2', color: '#991b1b', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
+                                  Retirar
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
         )}
 
         {/* Tab stock */}
@@ -251,26 +258,29 @@ export default function Inventario() {
               <span>Entregado: <strong>{s.totalEntregado || 0}</strong></span>
               <span>Disponible: <strong style={{ color: 'var(--rosa)' }}>{s.disponible || 0}</strong></span>
             </div>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Fecha</th><th>Cantidad</th><th>Costo unit</th><th>Total</th><th>Proveedor</th><th>Factura</th></tr></thead>
-                <tbody>
-                  {historial.length === 0 && (
-                    <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-3)', padding: 24 }}>Sin ingresos registrados</td></tr>
-                  )}
-                  {historial.map((h, i) => (
-                    <tr key={i}>
-                      <td>{h.fecha}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 700 }}>{h.cantidad}</td>
-                      <td>${h.costoUnit}</td>
-                      <td style={{ fontWeight: 700 }}>${h.total}</td>
-                      <td style={{ fontSize: 11 }}>{h.proveedor || '-'}</td>
-                      <td style={{ fontSize: 11 }}>{h.factura || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {!data && cargando
+              ? <div style={{ padding: 40, textAlign: 'center' }}><Spinner /></div>
+              : <div className="table-wrap">
+                  <table>
+                    <thead><tr><th>Fecha</th><th>Cantidad</th><th>Costo unit</th><th>Total</th><th>Proveedor</th><th>Factura</th></tr></thead>
+                    <tbody>
+                      {historial.length === 0 && (
+                        <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-3)', padding: 24 }}>Sin ingresos registrados</td></tr>
+                      )}
+                      {historial.map((h, i) => (
+                        <tr key={i}>
+                          <td>{h.fecha}</td>
+                          <td style={{ textAlign: 'center', fontWeight: 700 }}>{h.cantidad}</td>
+                          <td>${h.costoUnit}</td>
+                          <td style={{ fontWeight: 700 }}>${h.total}</td>
+                          <td style={{ fontSize: 11 }}>{h.proveedor || '-'}</td>
+                          <td style={{ fontSize: 11 }}>{h.factura || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+            }
           </div>
         )}
       </Card>
@@ -305,10 +315,13 @@ export default function Inventario() {
               onFocus={() => setMedicoOpen(true)}
               autoComplete="off" />
             {medicoOpen && medicosFiltrados.length > 0 && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid var(--border)', borderRadius: 8, boxShadow: 'var(--shadow)', maxHeight: 200, overflowY: 'auto' }}>
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                background: '#fff', border: '1px solid var(--border)', borderRadius: 8,
+                boxShadow: 'var(--shadow)', maxHeight: 200, overflowY: 'auto' }}>
                 {medicosFiltrados.map((m, i) => (
                   <div key={i} onMouseDown={() => seleccionarMedico(m)}
-                    style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 12, borderBottom: '1px solid #fdf4f8', display: 'flex', justifyContent: 'space-between' }}
+                    style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 12,
+                      borderBottom: '1px solid #fdf4f8', display: 'flex', justifyContent: 'space-between' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--rosa-paler)'}
                     onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                     <span style={{ fontWeight: 500 }}>{m.nombre}</span>
