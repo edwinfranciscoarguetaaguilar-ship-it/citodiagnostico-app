@@ -1,4 +1,4 @@
-import { LayoutDashboard, ClipboardList, FlaskConical, Activity, FileText, Settings, LogOut, List } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, FlaskConical, Activity, FileText, Settings, LogOut, List, Package } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 const NAV = [
@@ -6,6 +6,7 @@ const NAV = [
   { id: 'recepcion',    label: 'Recepción',    icon: ClipboardList },
   { id: 'citologias',   label: 'Citologías',   icon: List },
   { id: 'diagnostico',  label: 'Diagnóstico',  icon: FlaskConical },
+  { id: 'inventario',   label: 'Inventario',   icon: Package },
   { id: 'medicos',      label: 'Médicos',      icon: Activity },
   { id: 'facturacion',  label: 'Facturación',  icon: FileText },
   { id: 'config',       label: 'Configuración',icon: Settings },
@@ -19,6 +20,7 @@ export default function Sidebar({ page, setPage }) {
     recepcion:   puede('recepcion'),
     citologias:  true,
     diagnostico: puede('diagnostico'),
+    inventario:  puede('finanzas'),
     medicos:     puede('medicos'),
     facturacion: puede('finanzas'),
     config:      puede('config'),
