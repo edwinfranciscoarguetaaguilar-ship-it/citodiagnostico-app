@@ -8,6 +8,7 @@ import Dashboard    from './pages/Dashboard';
 import Recepcion    from './pages/Recepcion';
 import Citologias   from './pages/Citologias';
 import Diagnostico  from './pages/Diagnostico';
+import Inventario   from './pages/Inventario';
 import Medicos      from './pages/Medicos';
 import Facturacion  from './pages/Facturacion';
 import Configuracion from './pages/Configuracion';
@@ -17,6 +18,7 @@ const PAGE_TITLES = {
   recepcion:   'Recepción',
   citologias:  'Citologías',
   diagnostico: 'Diagnóstico',
+  inventario:  'Inventario — Frascos citología líquida',
   medicos:     'Médicos',
   facturacion: 'Facturación',
   config:      'Configuración',
@@ -59,6 +61,7 @@ function AppInner() {
           {page === 'recepcion'   && <Recepcion/>}
           {page === 'citologias'  && <Citologias/>}
           {page === 'diagnostico' && <Diagnostico/>}
+          {page === 'inventario'  && <Inventario/>}
           {page === 'medicos'     && <Medicos/>}
           {page === 'facturacion' && <Facturacion/>}
           {page === 'config'      && <Configuracion/>}
