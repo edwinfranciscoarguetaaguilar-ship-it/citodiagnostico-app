@@ -130,7 +130,7 @@ export default function Medicos() {
                   <td>{precioDisplay(m.precioCupula)}</td>
                   <td style={{ fontSize:11 }}>
                     {m.whatsapp
-                      ? <a href={`https://wa.me/${m.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
+                      ? <a href={`https://wa.me/${String(m.whatsapp).replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
                           style={{ color:'#25d366', fontWeight:600, textDecoration:'none' }}>
                           📱 {m.whatsapp}
                         </a>
