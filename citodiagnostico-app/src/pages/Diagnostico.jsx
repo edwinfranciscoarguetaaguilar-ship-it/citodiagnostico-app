@@ -257,9 +257,10 @@ export default function Diagnostico() {
 
                 {/* Resultados búsqueda por nombre */}
                 {modoBusqueda==='nombre' && resultadosNombre.length>0 && (
-                  <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:9999,
+                  <div style={{ position:'fixed', top:'auto', left:'50%', transform:'translateX(-50%)',
+                    width:'min(680px, 90vw)', zIndex:9999,
                     background:'#fff', border:'1px solid var(--border)', borderRadius:8,
-                    boxShadow:'0 8px 24px rgba(0,0,0,0.12)', maxHeight:280, overflowY:'auto', marginTop:4 }}>
+                    boxShadow:'0 8px 32px rgba(0,0,0,0.18)', maxHeight:300, overflowY:'auto', marginTop:4 }}>
                     {resultadosNombre.map((r,i)=>(
                       <div key={i} onClick={()=>buscar(r.idCito)}
                         style={{ padding:'10px 16px', cursor:'pointer', borderBottom:'1px solid #fdf4f8',
