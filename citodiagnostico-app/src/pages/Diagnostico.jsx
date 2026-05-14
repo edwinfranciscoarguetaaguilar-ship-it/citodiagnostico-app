@@ -238,7 +238,7 @@ export default function Diagnostico() {
                 ))}
               </div>
 
-              <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap', position:'relative' }}>
+              <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap', position:'relative', zIndex:200 }}>
                 <div className="search-wrap" style={{ flex:1, minWidth:200 }}>
                   <Search className="search-icon" size={16}/>
                   <input className="form-input"
@@ -257,7 +257,7 @@ export default function Diagnostico() {
 
                 {/* Resultados búsqueda por nombre */}
                 {modoBusqueda==='nombre' && resultadosNombre.length>0 && (
-                  <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:100,
+                  <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:9999,
                     background:'#fff', border:'1px solid var(--border)', borderRadius:8,
                     boxShadow:'0 8px 24px rgba(0,0,0,0.12)', maxHeight:280, overflowY:'auto', marginTop:4 }}>
                     {resultadosNombre.map((r,i)=>(
@@ -279,7 +279,7 @@ export default function Diagnostico() {
                   </div>
                 )}
                 {modoBusqueda==='nombre' && busqueda.length>0 && busqueda.length<3 && (
-                  <div style={{ position:'absolute', top:'100%', left:0, fontSize:11, color:'var(--text-3)', padding:'8px 16px', background:'#fff', border:'1px solid var(--border)', borderRadius:8, marginTop:4 }}>
+                  <div style={{ position:'absolute', top:'100%', left:0, fontSize:11, color:'var(--text-3)', padding:'8px 16px', background:'#fff', border:'1px solid var(--border)', borderRadius:8, marginTop:4, zIndex:9999 }}>
                     Escribe al menos 3 letras...
                   </div>
                 )}
