@@ -157,6 +157,18 @@ export default function Inventario() {
         </div>
       )}
 
+      {/* ALERTA STOCK BAJO - minimo 25 frascos */}
+      {data && (s.disponible || 0) < 25 && (s.disponible || 0) >= 0 && (
+        <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10, padding: '12px 18px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 22 }}>STOCK BAJO</span>
+          <div>
+            <div style={{ fontWeight: 700, color: '#92400e', fontSize: 13 }}>Quedan solo {s.disponible || 0} frascos disponibles en laboratorio</div>
+            <div style={{ fontSize: 12, color: '#b45309', marginTop: 3 }}>El minimo recomendado es 25. Considera realizar un nuevo pedido.</div>
+          </div>
+          <Btn onClick={() => setModalStock(true)} style={{ marginLeft: 'auto' }}>Registrar compra</Btn>
+        </div>
+      )}
+
       {/* Card principal */}
       <Card>
         <div style={{ padding: '12px 20px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
