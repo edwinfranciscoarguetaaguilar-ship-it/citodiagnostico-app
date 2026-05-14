@@ -27,15 +27,14 @@ async function toBase64(url) {
   } catch { return ''; }
 }
 
-function imprimirReporte(htmlContent) {
+function imprimirReporte(html) {
   const v = window.open('', '_blank', 'width=850,height=1100');
   v.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte</title>'
     + '<style>*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box;margin:0;padding:0}'
-    + 'body{font-family:Arial,sans-serif;font-size:11px;color:#1a0d14;background:#fff;padding:10px}'
+    + 'body{font-family:Arial,sans-serif;font-size:11px;color:#1a0d14;background:#fff;padding:8px}'
     + '@page{size:letter;margin:8mm}'
-    + '</style></head><body>'
-    + htmlContent
-    + '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print();},800)}<\/scr' + 'ipt>'
+    + '</style></head><body>' + html
+    + '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},800)}<\/scr'+'ipt>'
     + '</body></html>');
   v.document.close();
 }
@@ -51,10 +50,7 @@ export default function ReportePreview({ cito, dx, onGuardarDrive }) {
   const labEmail     = c['LAB_EMAIL']     || '';
   const labDir       = c['LAB_DIRECCION'] || '';
   const labLogoUrl   = driveImg(c['LAB_LOGO_URL']   || '');
-  const citoNombre   = c['CITO_NOMBRE']   || '';
-  const citoTitulo   = c['CITO_TITULO']   || '';
-  const citoColegiado= c['CITO_COLEGIADO']|| '';
-  const citoCargo    = c['CITO_CARGO']    || '';
+  const citoCargo    = c['CITO_CARGO']    || 'MEDICO CITOLOGO';
   const citoFirmaUrl = driveImg(c['CITO_FIRMA_URL'] || '');
   const labSlogan    = c['LAB_SLOGAN']    || 'Diagnostico confiable en tiempo record';
   const labNota      = c['REPORTE_NOTA']  || 'NOTA: LAMINAS SE CONSERVARAN UNICAMENTE POR 6 MESES DESPUES DE RECIBIDA LA MUESTRA.';
@@ -75,14 +71,21 @@ export default function ReportePreview({ cito, dx, onGuardarDrive }) {
   const esLiquida = cito?.muestra === 'CITOLOGIA LIQUIDA';
 
   function buildHTML(logo, firma) {
-    const logoTag  = logo
+    const logoTag = logo
       ? '<img src="' + logo + '" style="max-height:65px;max-width:220px;object-fit:contain" alt="Logo"/>'
       : '<div style="font-size:14px;font-weight:bold;color:#802f58">' + labNombre + '</div>';
+
     const firmaTag = firma
-      ? '<img src="' + firma + '" style="max-height:80px;max-width:200px;object-fit:contain;display:block;margin:0 auto 6px" alt="Firma"/>'
-      : '<div style="height:40px;border-bottom:1px solid #ccc;width:160px;margin:0 auto 8px"></div>';
+      ? '<img src="' + firma + '" style="max-height:85px;max-width:220px;object-fit:contain;display:block;margin:0 auto 10px" alt="Firma y sello"/>'
+      : '<div style="height:45px;border-bottom:1px solid #ccc;width:160px;margin:0 auto 10px"></div>';
+
     const liquidaTag = esLiquida
       ? '<div style="background:#eff6ff;border-bottom:1px solid #bfdbfe;padding:4px 18px;font-size:10px;font-weight:bold;color:#1e40af">CITOLOGIA EN BASE LIQUIDA</div>'
+      : '';
+
+    // Diagnostico principal con resaltado amarillo tipo marcador
+    const dx1Resaltado = dx1
+      ? '<div style="background:#fff9c4;border-left:3px solid #f59e0b;padding:6px 10px;border-radius:3px;font-weight:bold;font-size:12px;margin-bottom:4px">' + dx1 + '</div>'
       : '';
 
     return '<div style="max-width:680px;margin:0 auto;font-family:Arial,sans-serif;font-size:11px;color:#1a0d14;background:#fff">'
@@ -94,15 +97,13 @@ export default function ReportePreview({ cito, dx, onGuardarDrive }) {
       + (labTel   ? '<div>' + labTel   + '</div>' : '')
       + (labEmail ? '<div>' + labEmail + '</div>' : '')
       + (labDir   ? '<div>' + labDir   + '</div>' : '')
-      + '</div>'
-      + '</div>'
+      + '</div></div>'
 
       // Titulo
       + '<div style="background:#802f58;color:white;text-align:center;padding:6px;font-size:12px;font-weight:bold;letter-spacing:0.1em">REPORTE DE ESTUDIO CITOLOGICO</div>'
-
       + liquidaTag
 
-      // Datos
+      // Datos paciente
       + '<div style="padding:10px 18px 8px">'
       + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-bottom:1px solid #e8d0dc;padding-bottom:10px;margin-bottom:8px">'
       + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080">Nombre de la paciente</div><div style="font-weight:bold;font-size:12px">' + (cito?.nombre||'') + '</div></div>'
@@ -132,29 +133,27 @@ export default function ReportePreview({ cito, dx, onGuardarDrive }) {
       + '</div>'
       + '<div style="font-size:11px;line-height:1.6;margin-bottom:6px">' + (dx?.observaciones||'SIN OBSERVACIONES') + '</div>'
 
-      // Diagnostico
-      + '<div style="background:#fbeaf0;color:#802f58;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:0.07em;padding:5px 10px;margin:10px 0 6px;border-radius:3px">Diagnostico</div>'
-      + '<div style="font-size:11px;line-height:1.8;margin-bottom:6px">'
-      + (dx1 ? '<div>' + dx1 + '</div>' : '')
-      + (dx2 ? '<div>' + dx2 + '</div>' : '')
-      + (dx3 ? '<div>' + dx3 + '</div>' : '')
-      + (dx4 ? '<div>' + dx4 + '</div>' : '')
+      // DIAGNOSTICO — con resaltado amarillo en DX1
+      + '<div style="background:#fbeaf0;color:#802f58;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:0.07em;padding:5px 10px;margin:10px 0 8px;border-radius:3px">Diagnostico</div>'
+      + '<div style="font-size:11px;line-height:1.8;margin-bottom:8px">'
+      + dx1Resaltado
+      + (dx2 ? '<div style="padding:2px 0">' + dx2 + '</div>' : '')
+      + (dx3 ? '<div style="padding:2px 0">' + dx3 + '</div>' : '')
+      + (dx4 ? '<div style="padding:2px 0">' + dx4 + '</div>' : '')
       + '</div>'
 
       // Comentarios
       + '<div style="background:#fbeaf0;color:#802f58;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:0.07em;padding:5px 10px;margin:10px 0 6px;border-radius:3px">Comentarios y sugerencias</div>'
-      + '<div style="font-size:11px;line-height:1.6;margin-bottom:6px">' + (dx?.comentarios||'SIN COMENTARIOS RELACIONADOS')
+      + '<div style="font-size:11px;line-height:1.6;margin-bottom:6px">'
+      + (dx?.comentarios||'SIN COMENTARIOS RELACIONADOS')
       + (dx?.comentariosLibres ? '<div style="margin-top:4px">' + dx.comentariosLibres + '</div>' : '')
-      + '</div>'
-      + '</div>'
+      + '</div></div>'
 
-      // Firma
+      // FIRMA — solo imagen + cargo
       + '<div style="text-align:center;margin:10px 0;border-top:1px solid #e8d0dc;padding:16px 0">'
-      + '<div style="display:inline-block;border:1px solid #e8d0dc;padding:10px 24px;border-radius:6px">'
+      + '<div style="display:inline-block;border:1px solid #e8d0dc;padding:12px 28px;border-radius:6px;min-width:180px">'
       + firmaTag
-      + '<div style="font-weight:bold;font-size:11px">' + citoNombre + '</div>'
-      + '<div style="font-size:9px;color:#9a7080">' + citoTitulo + ' - ' + citoColegiado + '</div>'
-      + '<div style="font-size:9px;color:#9a7080;font-weight:bold">' + citoCargo + '</div>'
+      + '<div style="font-size:10px;font-weight:bold;color:#333;letter-spacing:0.03em">' + citoCargo + '</div>'
       + '</div></div>'
 
       // Pie
@@ -166,19 +165,19 @@ export default function ReportePreview({ cito, dx, onGuardarDrive }) {
       + '</div>';
   }
 
-  const handleImprimir = () => {
-    imprimirReporte(buildHTML(logoB64 || labLogoUrl, firmaB64 || citoFirmaUrl));
-  };
-
   return (
     <div>
       <div className="btn-group no-print" style={{ justifyContent:'center', marginBottom:18 }}>
-        <button className="btn" onClick={handleImprimir}>Imprimir</button>
-        <button className="btn btn-primary" onClick={onGuardarDrive}>Guardar en Drive + REALIZADO</button>
+        <button className="btn" onClick={()=>imprimirReporte(buildHTML(logoB64||labLogoUrl, firmaB64||citoFirmaUrl))}>
+          Imprimir
+        </button>
+        <button className="btn btn-primary" onClick={onGuardarDrive}>
+          Guardar en Drive + REALIZADO
+        </button>
       </div>
       <div id="reporte-imprimible"
         style={{ maxWidth:680, margin:'0 auto', background:'#fff', border:'1px solid #ccc', borderRadius:6, overflow:'hidden' }}
-        dangerouslySetInnerHTML={{ __html: buildHTML(logoB64 || labLogoUrl, firmaB64 || citoFirmaUrl) }}
+        dangerouslySetInnerHTML={{ __html: buildHTML(logoB64||labLogoUrl, firmaB64||citoFirmaUrl) }}
       />
     </div>
   );
