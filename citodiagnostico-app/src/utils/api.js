@@ -8,21 +8,25 @@ const BASE_URL = process.env.REACT_APP_GAS_URL;
 // Helper GET
 export async function apiGet(action, params = {}) {
   const query = new URLSearchParams({ action, ...params }).toString();
-  const res = await fetch(`${BASE_URL}?${query}`);
-  const json = await res.json();
+  const res = await fetch(`${BASE_URL}?${query}`, { redirect: 'follow' });
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); }
+  catch { throw new Error('Respuesta invalida del servidor'); }
   if (!json.ok) throw new Error(json.error || 'Error en la API');
   return json.data;
 }
 
-// Helper POST
+// Helper POST — action va en la URL, payload en query string
 export async function apiPost(action, data = {}) {
   const token = localStorage.getItem('cito_token') || '';
-  const res = await fetch(BASE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action, data, token }),
-  });
-  const json = await res.json();
+  const payload = JSON.stringify({ ...data, _token: token });
+  const query = new URLSearchParams({ action, payload }).toString();
+  const res = await fetch(`${BASE_URL}?${query}`, { redirect: 'follow' });
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); }
+  catch { throw new Error('Respuesta invalida del servidor'); }
   if (!json.ok) throw new Error(json.error || 'Error en la API');
   return json.data;
 }
