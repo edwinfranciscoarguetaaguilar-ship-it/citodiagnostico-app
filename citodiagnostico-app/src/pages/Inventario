@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Package, Plus, TrendingDown } from 'lucide-react';
 import { Card, Btn, Modal, Spinner } from '../components/UI';
 import { api } from '../utils/api';
 import { useApp } from '../context/AppContext';
@@ -160,10 +159,10 @@ export default function Inventario() {
         <div style={{ padding: '12px 20px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
           <div className="tabs" style={{ flex: 1 }}>
             <button className={`tab-btn ${tab === 'entregas' ? 'active' : ''}`} onClick={() => setTab('entregas')}>
-              <Package size={14} /> Entregas a medicos
+              Entregas a medicos
             </button>
             <button className={`tab-btn ${tab === 'stock' ? 'active' : ''}`} onClick={() => setTab('stock')}>
-              <TrendingDown size={14} /> Historial stock
+              Historial stock
             </button>
           </div>
           <Btn onClick={cargar} disabled={cargando}>Actualizar</Btn>
