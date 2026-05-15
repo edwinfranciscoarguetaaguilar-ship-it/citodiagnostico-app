@@ -140,12 +140,13 @@ export default function ReportePreview({ cito, dx, onGuardarDrive }) {
 
       // Datos paciente
       + '<div style="padding:10px 18px 8px">'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-bottom:1px solid #e8d0dc;padding-bottom:10px;margin-bottom:8px">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:start;border-bottom:1px solid #e8d0dc;padding-bottom:10px;margin-bottom:8px">'
       + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080">Nombre de la paciente</div><div style="font-weight:bold;font-size:12px">' + (cito?.nombre||'') + '</div></div>'
       + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080">Medico refiere</div><div style="font-weight:bold">' + (cito?.medico||'') + '</div></div>'
-      + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
-      + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080"># Citologia</div><div style="font-weight:bold;font-size:14px;color:#802f58">' + idCito + '</div></div>'
-      + '<div>' + barcodeTag + '</div>'
+      + '<div style="text-align:right">'
+      + '<div style="font-size:9px;text-transform:uppercase;color:#9a7080">N° Citologia</div>'
+      + '<div style="font-weight:bold;font-size:16px;color:#802f58;margin-bottom:3px">' + idCito + '</div>'
+      + '<div style="transform:scale(0.55);transform-origin:right top;display:block">' + barcodeTag + '</div>'
       + '</div>'
       + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080">Edad</div><div style="font-weight:bold">' + (cito?.edad ? cito.edad+' ANOS' : '') + '</div></div>'
       + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080">Tipo de muestra</div><div style="font-weight:bold">' + (dx?.tipoMuestra||'EXTENDIDO CONVENCIONAL') + '</div></div>'
