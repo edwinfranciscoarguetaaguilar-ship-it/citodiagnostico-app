@@ -27,7 +27,6 @@ async function toBase64(url) {
   } catch { return ''; }
 }
 
-// Fecha en zona horaria El Salvador UTC-6
 function fechaSV() {
   const ahora = new Date();
   const sv = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/El_Salvador' }));
@@ -82,7 +81,6 @@ export default function ReportePreview({ cito, dx, onGuardarDrive }) {
       ? '<img src="' + logo + '" style="max-height:70px;max-width:240px;object-fit:contain" alt="Logo"/>'
       : '<div style="font-size:14px;font-weight:bold;color:#802f58">' + labNombre + '</div>';
 
-    // Sello MAS GRANDE
     const firmaTag = firma
       ? '<img src="' + firma + '" style="max-height:130px;max-width:280px;object-fit:contain;display:block;margin:0 auto 10px" alt="Sello"/>'
       : '<div style="height:80px;border-bottom:1px solid #ccc;width:200px;margin:0 auto 10px"></div>';
@@ -91,12 +89,78 @@ export default function ReportePreview({ cito, dx, onGuardarDrive }) {
       ? '<div style="background:#eff6ff;border-bottom:1px solid #bfdbfe;padding:4px 18px;font-size:10px;font-weight:bold;color:#1e40af">CITOLOGIA EN BASE LIQUIDA</div>'
       : '';
 
-    // Diagnostico 1 resaltado en amarillo
     const dx1Tag = dx1
       ? '<div style="background:#fff9c4;border-left:3px solid #f59e0b;padding:6px 10px;border-radius:3px;font-weight:bold;font-size:12px;margin-bottom:4px">' + dx1 + '</div>'
       : '';
 
-      return (
+    return '<div style="max-width:680px;margin:0 auto;font-family:Arial,sans-serif;font-size:11px;color:#1a0d14;background:#fff">'
+
+      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:2px solid #802f58">'
+      + '<div>' + logoTag + '</div>'
+      + '<div style="text-align:right;font-size:10px;color:#444;line-height:1.9">'
+      + (labTel   ? '<div>' + labTel   + '</div>' : '')
+      + (labEmail ? '<div>' + labEmail + '</div>' : '')
+      + (labDir   ? '<div>' + labDir   + '</div>' : '')
+      + '</div></div>'
+
+      + '<div style="background:#802f58;color:white;text-align:center;padding:6px;font-size:12px;font-weight:bold;letter-spacing:0.1em">REPORTE DE ESTUDIO CITOLOGICO</div>'
+      + liquidaTag
+
+      + '<div style="padding:10px 18px 8px">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-bottom:1px solid #e8d0dc;padding-bottom:10px;margin-bottom:8px">'
+      + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080">Nombre de la paciente</div><div style="font-weight:bold;font-size:12px">' + (cito?.nombre||'') + '</div></div>'
+      + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080">Medico refiere</div><div style="font-weight:bold">' + (cito?.medico||'') + '</div></div>'
+      + '<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;color:#9a7080">N\u00b0 Citologia</div><div style="font-weight:bold;font-size:18px;color:#802f58">' + idCito + '</div></div>'
+      + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080">Edad</div><div style="font-weight:bold">' + (cito?.edad ? cito.edad+' ANOS' : '') + '</div></div>'
+      + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080">Tipo de muestra</div><div style="font-weight:bold">' + (dx?.tipoMuestra||'EXTENDIDO CONVENCIONAL') + '</div></div>'
+      + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080">Muestra recibida</div><div style="font-weight:bold;color:' + (esLiquida?'#1e40af':'inherit') + '">' + (cito?.muestra||'') + '</div></div>'
+      + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080">Fecha de recepcion</div><div>' + (cito?.fecha||'') + '</div></div>'
+      + '<div><div style="font-size:9px;text-transform:uppercase;color:#9a7080">Fecha de reporte</div><div>' + fechaReporte + '</div></div>'
+      + '</div>'
+
+      + '<div style="font-size:11px;line-height:1.6;margin-bottom:6px">' + (dx?.calidad||'') + '</div>'
+
+      + '<div style="background:#fbeaf0;color:#802f58;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:0.07em;padding:5px 10px;margin:10px 0 6px;border-radius:3px">Interpretacion de resultados</div>'
+      + '<div style="font-size:11px;line-height:1.6;margin-bottom:6px">' + dx1 + '</div>'
+
+      + '<div style="background:#fbeaf0;color:#802f58;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:0.07em;padding:5px 10px;margin:10px 0 6px;border-radius:3px">Hallazgos no neoplasicos</div>'
+      + '<div style="display:grid;grid-template-columns:160px 1fr;gap:3px;font-size:11px;margin-bottom:8px">'
+      + '<span style="color:#9a7080">Variaciones celulares:</span><span>' + (dx?.variaciones||'') + '</span>'
+      + '<span style="color:#9a7080">Cambios reactivos:</span><span>' + (dx?.cambiosReactivos||'') + '</span>'
+      + '<span style="color:#9a7080">Flora bacteriana:</span><span>' + (dx?.flora||'') + '</span>'
+      + '<span style="color:#9a7080">Microorganismos:</span><span>' + (dx?.microorganismos||'') + '</span>'
+      + '</div>'
+      + '<div style="font-size:11px;line-height:1.6;margin-bottom:6px">' + (dx?.observaciones||'SIN OBSERVACIONES') + '</div>'
+
+      + '<div style="background:#fbeaf0;color:#802f58;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:0.07em;padding:5px 10px;margin:10px 0 8px;border-radius:3px">Diagnostico</div>'
+      + '<div style="font-size:11px;line-height:1.8;margin-bottom:8px">'
+      + dx1Tag
+      + (dx2 ? '<div style="padding:2px 0">' + dx2 + '</div>' : '')
+      + (dx3 ? '<div style="padding:2px 0">' + dx3 + '</div>' : '')
+      + (dx4 ? '<div style="padding:2px 0">' + dx4 + '</div>' : '')
+      + '</div>'
+
+      + '<div style="background:#fbeaf0;color:#802f58;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:0.07em;padding:5px 10px;margin:10px 0 6px;border-radius:3px">Comentarios y sugerencias</div>'
+      + '<div style="font-size:11px;line-height:1.6;margin-bottom:6px">'
+      + (dx?.comentarios||'SIN COMENTARIOS RELACIONADOS')
+      + (dx?.comentariosLibres ? '<div style="margin-top:4px">' + dx.comentariosLibres + '</div>' : '')
+      + '</div></div>'
+
+      + '<div style="text-align:center;margin:10px 0;border-top:1px solid #e8d0dc;padding:20px 0">'
+      + '<div style="display:inline-block;border:1px solid #e8d0dc;padding:14px 32px;border-radius:8px;min-width:220px">'
+      + firmaTag
+      + '<div style="font-size:11px;font-weight:bold;color:#333;letter-spacing:0.03em;margin-top:6px">' + citoCargo + '</div>'
+      + '</div></div>'
+
+      + '<div style="text-align:center;font-style:italic;color:#802f58;font-size:11px;border-top:1px solid #e8d0dc;padding:10px 18px;line-height:1.8">'
+      + '"' + labSlogan + '"<br>'
+      + '<span style="font-style:normal;font-size:9px;color:#9a7080">' + labNota + '</span>'
+      + '<div style="font-size:9px;color:#aaa;margin-top:6px">Fecha de reporte: ' + fechaReporte + '</div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  return (
     <div>
       <div className="btn-group no-print" style={{ justifyContent:'center', marginBottom:18 }}>
         <button className="btn" onClick={()=>imprimirReporte(buildHTML(logoB64||labLogoUrl, firmaB64||citoFirmaUrl))}>
