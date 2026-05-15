@@ -15,6 +15,7 @@ const NAV = [
 
 export default function Sidebar({ page, setPage }) {
   const { usuario, logout, puede } = useApp();
+  const [col, setCol] = useState(false);
 
   const paginasPermitidas = {
     dashboard:   true,
@@ -28,12 +29,12 @@ export default function Sidebar({ page, setPage }) {
   };
 
   return (
-    <aside className="sidebar" style={{ width:col?56:220, minWidth:col?56:220, transition:"width .2s", position:"relative", overflow:"hidden" }}>
+    <aside className="sidebar" style={{ width:col?56:220, minWidth:col?56:220, transition:"width .2s ease", position:"relative", overflow:"hidden" }}>
       <button onClick={()=>setCol(!col)} title={col?"Expandir":"Colapsar"}
-        style={{ position:"absolute", right:8, top:10, zIndex:20, background:"var(--rosa-pale)", border:"1px solid var(--border)", borderRadius:6, padding:"3px 5px", cursor:"pointer", color:"var(--rosa)", display:"flex", alignItems:"center" }}>
+        style={{ position:"absolute", right:6, top:10, zIndex:20, background:"rgba(255,255,255,0.15)", border:"none", borderRadius:6, padding:"4px 6px", cursor:"pointer", color:"#fff", display:"flex", alignItems:"center" }}>
         {col?<ChevronRight size={13}/>:<ChevronLeft size={13}/>}
       </button>
-      <div className="sidebar-logo">
+      <div className="sidebar-logo" style={{opacity:col?0:1,transition:"opacity .15s",pointerEvents:col?"none":"auto"}}>
         <div className="sidebar-lab-name">Centro Citodiagnóstico<br/>de la Mujer</div>
         <div className="sidebar-lab-sub">LIS v2.0</div>
       </div>
@@ -45,7 +46,7 @@ export default function Sidebar({ page, setPage }) {
             className={`nav-btn ${page === id ? 'active' : ''}`}
             onClick={() => setPage(id)}
           >
-            <Icon size={18}/> {label}
+            <Icon size={18}/> {!col && <span>{label}</span>}
           </button>
         ))}
       </nav>
