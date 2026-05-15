@@ -97,10 +97,14 @@ export default function Citologias() {
     setSeleccionados(prev=>prev.includes(idCito)?prev.filter(id=>id!==idCito):[...prev,idCito]);
   };
 
-  // Obtener preferencia del medico
+  // Obtener preferencia del medico - comparacion flexible
   const preferenciaMedico = (nombreMedico) => {
-    const med = medicos.find(m => m.nombre === nombreMedico);
-    return med?.preferenciaEntrega || 'IMPRESO';
+    if (!nombreMedico) return 'IMPRESO';
+    const med = medicos.find(m =>
+      m.nombre?.toString().trim().toUpperCase() === nombreMedico.toString().trim().toUpperCase()
+    );
+    const pref = med?.preferenciaEntrega?.toString().trim().toUpperCase() || 'IMPRESO';
+    return pref;
   };
 
   const seleccionarParaImprimir = () => {
@@ -136,8 +140,11 @@ export default function Citologias() {
 
   // IMPRESION EN LOTE — abre ventana con todos los reportes seleccionados
   const imprimirLote = async () => {
-    const selec = citosFiltradas.filter(c=>seleccionados.includes(c.idCito)&&c.urlPDF);
-    if (!selec.length) { mostrarToast('Selecciona citologias con PDF para imprimir','error'); return; }
+    const selec = citosFiltradas.filter(c=>
+      seleccionados.includes(c.idCito) && c.urlPDF &&
+      (preferenciaMedico(c.medico)==='IMPRESO' || preferenciaMedico(c.medico)==='AMBOS')
+    );
+    if (!selec.length) { mostrarToast('No hay citologias con preferencia de impresion seleccionadas','error'); return; }
     setImprimiendoLote(true);
     try {
       const v = window.open('','_blank','width=900,height=700');
@@ -214,11 +221,11 @@ export default function Citologias() {
             {seleccionados.length>0 && (<>
               <button onClick={()=>setWaModal(true)}
                 style={{ padding:'8px 14px', borderRadius:7, fontSize:12, fontWeight:600, background:'#25d366', color:'#fff', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                <Phone size={14}/> WhatsApp ({seleccionados.length})
+                <Phone size={14}/> WhatsApp ({citosFiltradas.filter(c=>seleccionados.includes(c.idCito)&&(preferenciaMedico(c.medico)==='WHATSAPP'||preferenciaMedico(c.medico)==='AMBOS')).length})
               </button>
               <button onClick={imprimirLote} disabled={imprimiendoLote}
                 style={{ padding:'8px 14px', borderRadius:7, fontSize:12, fontWeight:600, background:'#1e40af', color:'#fff', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                <Printer size={14}/> Imprimir ({seleccionados.length})
+                <Printer size={14}/> Imprimir ({citosFiltradas.filter(c=>seleccionados.includes(c.idCito)&&(preferenciaMedico(c.medico)==='IMPRESO'||preferenciaMedico(c.medico)==='AMBOS')).length})
               </button>
             </>)}
           </div>
@@ -333,6 +340,12 @@ export default function Citologias() {
                                 <button onClick={()=>enviarWAIndividual(c)} title="WhatsApp"
                                   style={{ padding:'5px 7px', borderRadius:6, border:'none', background:'#25d366', cursor:'pointer', fontSize:13 }}>
                                   📱
+                                </button>
+                              )}
+                              {c.urlPDF&&(
+                                <button onClick={()=>window.open(c.urlPDF,'_blank')} title="Imprimir PDF"
+                                  style={{ padding:'5px 7px', borderRadius:6, border:'none', background:'#1e40af', color:'#fff', cursor:'pointer', fontSize:13 }}>
+                                  🖨️
                                 </button>
                               )}
                             </div>
