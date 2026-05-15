@@ -97,6 +97,28 @@ export default function Citologias() {
     setSeleccionados(prev=>prev.includes(idCito)?prev.filter(id=>id!==idCito):[...prev,idCito]);
   };
 
+  // Obtener preferencia del medico
+  const preferenciaMedico = (nombreMedico) => {
+    const med = medicos.find(m => m.nombre === nombreMedico);
+    return med?.preferenciaEntrega || 'IMPRESO';
+  };
+
+  const seleccionarParaImprimir = () => {
+    setSeleccionados(citosFiltradas.filter(c => {
+      if (c.estatus !== 'REALIZADO' || !c.urlPDF) return false;
+      const pref = preferenciaMedico(c.medico);
+      return pref === 'IMPRESO' || pref === 'AMBOS';
+    }).map(c => c.idCito));
+  };
+
+  const seleccionarParaWhatsapp = () => {
+    setSeleccionados(citosFiltradas.filter(c => {
+      if (c.estatus !== 'REALIZADO' || !c.urlPDF) return false;
+      const pref = preferenciaMedico(c.medico);
+      return pref === 'WHATSAPP' || pref === 'AMBOS';
+    }).map(c => c.idCito));
+  };
+
   const seleccionarTodas = () => {
     setSeleccionados(citosFiltradas.filter(c=>c.estatus==='REALIZADO'&&c.urlPDF).map(c=>c.idCito));
   };
@@ -230,7 +252,11 @@ export default function Citologias() {
         action={
           <div className="btn-group">
             {citosFiltradas.filter(c=>c.estatus==='REALIZADO'&&c.urlPDF).length>0&&(
-              <Btn size="sm" onClick={seleccionarTodas}>Seleccionar realizadas</Btn>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                <Btn size="sm" onClick={seleccionarParaImprimir}>🖨️ Sel. imprimir</Btn>
+                <Btn size="sm" onClick={seleccionarParaWhatsapp}>📱 Sel. WhatsApp</Btn>
+                <Btn size="sm" onClick={seleccionarTodas}>Todas</Btn>
+              </div>
             )}
             {seleccionados.length>0&&<Btn size="sm" onClick={()=>setSeleccionados([])}>Deseleccionar</Btn>}
           </div>
@@ -286,10 +312,16 @@ export default function Citologias() {
                           <td><PagoPill pago={c.pagado}/></td>
                           <td><EstatusPill estatus={c.estatus}/></td>
                           <td>
-                            {c.urlPDF
-                              ? <a href={c.urlPDF} target="_blank" rel="noreferrer" style={{ color:'var(--rosa)', fontSize:11, fontWeight:600, textDecoration:'none' }}>Ver</a>
-                              : <span style={{ color:'var(--text-3)', fontSize:11 }}>—</span>
-                            }
+                            <div style={{display:'flex',flexDirection:'column',gap:3,alignItems:'center'}}>
+                              {c.urlPDF
+                                ? <a href={c.urlPDF} target="_blank" rel="noreferrer" style={{ color:'var(--rosa)', fontSize:11, fontWeight:600, textDecoration:'none' }}>Ver</a>
+                                : <span style={{ color:'var(--text-3)', fontSize:11 }}>—</span>
+                              }
+                              {(()=>{
+                                const pref = preferenciaMedico(c.medico);
+                                return <span title={pref} style={{fontSize:12}}>{pref==='WHATSAPP'?'📱':pref==='IMPRESO'?'🖨️':'📱🖨️'}</span>;
+                              })()}
+                            </div>
                           </td>
                           <td>
                             <div style={{ display:'flex', gap:4 }}>
