@@ -120,9 +120,14 @@ function generarTendencia(citos, vista) {
   const puntos = [];
 
   if (vista === 'Semana') {
-    for (let d = 6; d >= 0; d--) {
+    // Excluir domingos (dia 0) — el laboratorio no abre
+    let diasAgregados = 0;
+    let offset = 0;
+    while (diasAgregados < 6) {
       const fecha = new Date(hoy);
-      fecha.setDate(hoy.getDate() - d);
+      fecha.setDate(hoy.getDate() - offset);
+      offset++;
+      if (fecha.getDay() === 0) continue; // domingo = 0, saltar
       const key = fecha.toISOString().slice(0,10);
       const label = fecha.toLocaleDateString('es-SV',{ weekday:'short' });
       const dia = citos.filter(c => {
@@ -132,11 +137,12 @@ function generarTendencia(citos, vista) {
         const f = new Date(p[2], p[1]-1, p[0]);
         return f.toISOString().slice(0,10) === key;
       });
-      puntos.push({
+      puntos.unshift({
         label,
         recibidas:  dia.length,
         realizadas: dia.filter(c => c.estatus === 'REALIZADO').length
       });
+      diasAgregados++;
     }
   } else if (vista === 'Mes') {
     for (let s = 3; s >= 0; s--) {
