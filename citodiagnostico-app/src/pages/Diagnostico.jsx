@@ -349,6 +349,7 @@ export default function Diagnostico() {
                   <div style={{ borderBottom:'1px solid var(--border)', marginBottom:20, paddingBottom:4 }}>
                     <span style={{ fontSize:11, fontWeight:700, color:'var(--rosa)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Calidad e interpretacion</span>
                   </div>
+                  {/* Calidad e interpretacion - ancho completo */}
                   <CampoDx label="Calidad de la muestra" name="calidad" value={dx.calidad} onChange={handleDx} opciones={d.calidadMuestra||[]}/>
                   <CampoDx label="Interpretacion / Resultado" name="interpretacion" value={dx.interpretacion} onChange={handleDx} opciones={d.interpretacion||[]} highlight/>
 
@@ -358,19 +359,22 @@ export default function Diagnostico() {
                     <div style={{ borderBottom:'1px solid var(--border)', marginBottom:20, paddingBottom:4 }}>
                       <span style={{ fontSize:11, fontWeight:700, color:'var(--rosa)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Anomalias epiteliales</span>
                     </div>
-                    <CampoDx label="Tipo de anomalia" name="anomaliaTipo" value={dx.anomaliaTipo} onChange={handleDx} opciones={[...new Set(d.anomaliaTipo||[])]}/>
-                    <CampoDx label="Detalle de la anomalia" name="anomaliaDetalle" value={dx.anomaliaDetalle} onChange={handleDx} opciones={d.anomaliaDetalle||[]}/>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                      <CampoDx label="Tipo de anomalia" name="anomaliaTipo" value={dx.anomaliaTipo} onChange={handleDx} opciones={[...new Set(d.anomaliaTipo||[])]}/>
+                      <CampoDx label="Detalle de la anomalia" name="anomaliaDetalle" value={dx.anomaliaDetalle} onChange={handleDx} opciones={d.anomaliaDetalle||[]}/>
+                    </div>
                     <CampoDx label="Celulas escamosas atipicas (ASC)" name="ascAtipicas" value={dx.ascAtipicas} onChange={handleDx} opciones={d.ascAtipicas||[]}/>
                   </>)}
 
                   <div style={{ borderBottom:'1px solid var(--border)', marginBottom:20, paddingBottom:4 }}>
                     <span style={{ fontSize:11, fontWeight:700, color:'var(--rosa)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Hallazgos no neoplasicos</span>
                   </div>
-                  <CampoDx label="Variaciones celulares" name="variaciones" value={dx.variaciones} onChange={handleDx} opciones={d.variaciones||[]}/>
-                  <CampoDx label="Cambios celulares reactivos" name="cambiosReactivos" value={dx.cambiosReactivos} onChange={handleDx} opciones={d.cambiosReactivos||[]}/>
+                  {/* Hallazgos en 2 columnas */}
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-                    <CampoDx label="Flora bacteriana" name="flora" value={dx.flora} onChange={handleDx} opciones={d.flora||[]}/>
-                    <CampoDx label="Microorganismos" name="microorganismos" value={dx.microorganismos} onChange={handleDx} opciones={d.microorganismos||[]}/>
+                    <CampoDx label="Variaciones celulares" name="variaciones" value={dx.variaciones} onChange={handleDx} opciones={d.variaciones||[]}/>
+                    <CampoDx label="Cambios celulares reactivos" name="cambiosReactivos" value={dx.cambiosReactivos} onChange={handleDx} opciones={d.cambiosReactivos||[]}/>
+                    <CampoDx label="Flora bacteriana" name="flora" value={dx.flora} onChange={handleDx} opciones={(d.flora||[]).map(o=>o==='NINGUNA'?'AUSENTES':o)}/>
+                    <CampoDx label="Microorganismos" name="microorganismos" value={dx.microorganismos} onChange={handleDx} opciones={(d.microorganismos||[]).map(o=>o==='NINGUNO'?'AUSENTES':o)}/>
                   </div>
 
                   <div style={{ borderBottom:'1px solid var(--border)', marginBottom:20, paddingBottom:4 }}>
@@ -380,15 +384,18 @@ export default function Diagnostico() {
                     <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6, fontWeight:700 }}>Preview auto-generado:</div>
                     {dx.dx1&&<div>{dx.dx1}</div>}{dx.dx2&&<div>{dx.dx2}</div>}{dx.dx3&&<div>{dx.dx3}</div>}{dx.dx4&&<div>{dx.dx4}</div>}
                   </div>
-                  {[1,2,3,4].map(n=>(
-                    <div key={n} style={{ marginBottom:16 }}>
-                      <label style={{ display:'block', fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--text-3)', fontWeight:600, marginBottom:6 }}>
-                        Diagnostico linea {n} {n===1?'(principal)':n>2?'(opcional)':''}
-                      </label>
-                      <textarea className="form-textarea" name={'dx'+n} value={dx['dx'+n]}
-                        onChange={handleDxDirecto} rows={2} style={{ borderColor:n===1?'var(--rosa-light)':'' }}/>
-                    </div>
-                  ))}
+                  {/* Lineas de diagnostico en 2 columnas */}
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                    {[1,2,3,4].map(n=>(
+                      <div key={n} style={{ marginBottom:8 }}>
+                        <label style={{ display:'block', fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--text-3)', fontWeight:600, marginBottom:6 }}>
+                          Diagnostico linea {n} {n===1?'(principal)':n>2?'(opcional)':''}
+                        </label>
+                        <textarea className="form-textarea" name={'dx'+n} value={dx['dx'+n]}
+                          onChange={handleDxDirecto} rows={3} style={{ borderColor:n===1?'var(--rosa-light)':'', resize:'vertical' }}/>
+                      </div>
+                    ))}
+                  </div>
 
                   <div style={{ borderBottom:'1px solid var(--border)', marginBottom:20, paddingBottom:4 }}>
                     <span style={{ fontSize:11, fontWeight:700, color:'var(--rosa)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Observaciones y comentarios</span>
