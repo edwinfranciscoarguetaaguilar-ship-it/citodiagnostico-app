@@ -1,4 +1,5 @@
-import { LayoutDashboard, ClipboardList, FlaskConical, Activity, FileText, Settings, LogOut, List, Package } from 'lucide-react';
+import { useState } from 'react';
+import { LayoutDashboard, ClipboardList, FlaskConical, Activity, FileText, Settings, LogOut, List, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 const NAV = [
@@ -27,7 +28,11 @@ export default function Sidebar({ page, setPage }) {
   };
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" style={{ width:col?56:220, minWidth:col?56:220, transition:"width .2s", position:"relative", overflow:"hidden" }}>
+      <button onClick={()=>setCol(!col)} title={col?"Expandir":"Colapsar"}
+        style={{ position:"absolute", right:8, top:10, zIndex:20, background:"var(--rosa-pale)", border:"1px solid var(--border)", borderRadius:6, padding:"3px 5px", cursor:"pointer", color:"var(--rosa)", display:"flex", alignItems:"center" }}>
+        {col?<ChevronRight size={13}/>:<ChevronLeft size={13}/>}
+      </button>
       <div className="sidebar-logo">
         <div className="sidebar-lab-name">Centro Citodiagnóstico<br/>de la Mujer</div>
         <div className="sidebar-lab-sub">LIS v2.0</div>
@@ -45,7 +50,7 @@ export default function Sidebar({ page, setPage }) {
         ))}
       </nav>
 
-      <div className="sidebar-footer">
+      <div className="sidebar-footer" style={{opacity:col?0:1,transition:"opacity .15s",pointerEvents:col?"none":"auto"}}>
         <div style={{ marginBottom: 8, color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>
           {usuario?.nombre}
           <span style={{ display:'block', fontSize:10, opacity:.5 }}>{usuario?.rol}</span>
