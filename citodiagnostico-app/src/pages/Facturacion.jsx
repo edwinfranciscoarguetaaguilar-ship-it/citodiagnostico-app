@@ -60,6 +60,22 @@ export default function Facturacion() {
     }
   };
 
+  const pagarTodas = async () => {
+    const pendientes = (detalleModal?.detalle || []).filter(d => d.pagado === 'PENDIENTE');
+    if (!pendientes.length) { mostrarToast('No hay pendientes', 'error'); return; }
+    try {
+      await Promise.all(pendientes.map(d => api.actualizarPago(d.idCito, 'PAGADO')));
+      mostrarToast(pendientes.length + ' citologias marcadas como pagadas');
+      setDetalleModal(prev => ({
+        ...prev,
+        detalle: prev.detalle.map(d => ({ ...d, pagado: 'PAGADO' }))
+      }));
+      cargar();
+    } catch(e) {
+      mostrarToast('Error: ' + e.message, 'error');
+    }
+  };
+
   const exportarCSV = () => {
     const rows = [
       ['Médico','Total citos','Monto total','Pagado','Transferencia','Pendiente'],
@@ -180,7 +196,16 @@ export default function Facturacion() {
         onClose={() => setDetalleModal(null)}
         title={detalleModal ? `Detalle — ${detalleModal.medico}` : ''}
         size="lg"
-        footer={<Btn onClick={() => setDetalleModal(null)}>Cerrar</Btn>}
+        footer={
+          <div className="btn-group">
+            {(detalleModal?.detalle||[]).some(d=>d.pagado==='PENDIENTE') && (
+              <Btn variant="primary" icon={CheckCircle} onClick={pagarTodas}>
+                Pagar todas las pendientes
+              </Btn>
+            )}
+            <Btn onClick={() => setDetalleModal(null)}>Cerrar</Btn>
+          </div>
+        }
       >
         {detalleModal && (
           <div>
@@ -198,6 +223,14 @@ export default function Facturacion() {
                 <strong style={{ fontSize:16, color:'#991b1b' }}>${detalleModal.pendiente}</strong>
               </div>
             </div>
+            {(detalleModal.detalle||[]).filter(d=>d.pagado==='PENDIENTE').length > 0 && (
+              <div style={{ background:'#fef3c7', border:'1px solid #fde68a', borderRadius:8, padding:'10px 16px', marginBottom:14, fontSize:12, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ color:'#92400e', fontWeight:600 }}>
+                  {(detalleModal.detalle||[]).filter(d=>d.pagado==='PENDIENTE').length} citologias pendientes de pago —
+                  ${(detalleModal.detalle||[]).filter(d=>d.pagado==='PENDIENTE').reduce((s,d)=>s+parseFloat(d.precio||0),0).toFixed(2)}
+                </span>
+              </div>
+            )}
             <div className="table-wrap">
               <table>
                 <thead><tr><th># Cito</th><th>Paciente</th><th>Fecha</th><th>Precio</th><th>Estado pago</th><th>Acción</th></tr></thead>
